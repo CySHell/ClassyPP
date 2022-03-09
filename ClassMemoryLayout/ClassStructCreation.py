@@ -1,5 +1,5 @@
 import binaryninja as bn
-from . import LayoutLoader, LayoutParser
+from . import LayoutLoader
 from typing import *
 
 

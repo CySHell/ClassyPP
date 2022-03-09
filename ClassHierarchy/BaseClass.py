@@ -1,7 +1,6 @@
 import binaryninja as bn
 from typing import *
-import logging
-log = logging.getLogger(__name__)
+from ..Common import Utils
 
 # TODO: implement for non relative addressing
 

@@ -29,4 +29,7 @@ GRAPH_FILE_FULL_PATH = os.path.expandvars(
 
 
 PATH_TO_LAYOUT_FOLDER = os.path.expandvars(
-    '%USERPROFILE%\\OneDrive\\Research Projects\\C++ Class Memory Layout\\')
+    '%CLASS_LAYOUT_FOLDER%')
+
+PATH_TO_CLASS_LAYOUTS_FILE = os.path.expandvars(
+    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\class_layouts.txt')

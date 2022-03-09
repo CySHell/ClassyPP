@@ -290,7 +290,7 @@ if __name__ == "__main__":
     fixup_member_types()
     verify_member_types()
 
-    with open(f'{Config.PATH_TO_LAYOUT_FOLDER}class_layouts.txt', "w") as f:
+    with open(f'{Config.PATH_TO_CLASS_LAYOUTS_FILE}', "w") as f:
         f.write(json.dumps(class_layouts, indent=4))
 else:
     from .. import Config

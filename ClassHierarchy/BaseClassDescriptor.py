@@ -2,9 +2,6 @@ import binaryninja as bn
 from . import ClassContext, ClassHierarchyDescriptor
 from ..Common import Utils
 from .. import Config
-import logging
-
-log = logging.getLogger(__name__)
 
 
 # TODO: implement for non relative addressing
@@ -100,11 +97,11 @@ class BaseClassDescriptor:
                                                                                        self.mangled_class_name)
         if class_hierarchy_descriptor.verified:
             Utils.LogToFile(f'BaseClassDescriptor: Fully recursively defined CHD at '
-                      f'{hex(class_hierarchy_descriptor.base_addr)}')
+                            f'{hex(class_hierarchy_descriptor.base_addr)}')
             return True
         else:
-            log.error(f'BaseClassDescriptor: Failed to recursively define CHD at '
-                      f'{hex(class_hierarchy_descriptor.base_addr)}')
+            Utils.LogToFile(f'BaseClassDescriptor: Failed to recursively define CHD at '
+                            f'{hex(class_hierarchy_descriptor.base_addr)}')
             return False
 
     def get_mangled_class_name(self) -> str:

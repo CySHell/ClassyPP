@@ -1,6 +1,5 @@
 import binaryninja as bn
-import logging
-log = logging.getLogger(__name__)
+from ..Common import Utils
 
 
 class TypeDescriptor:

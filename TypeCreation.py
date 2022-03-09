@@ -90,9 +90,6 @@ This module is responsible for defining the RTTI types defined in rttidata.h hea
 
 import binaryninja as bn
 from .Common import Utils
-import logging
-
-log = logging.getLogger(__name__)
 
 
 def Define_TypeDescriptor(bv: bn.binaryview, extra_bytes: int = 0) -> bool:

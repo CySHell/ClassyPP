@@ -2,8 +2,6 @@ import binaryninja as bn
 from .BaseClassArray import BaseClassArray
 from . import ClassContext
 from ..Common import Utils
-import logging
-log = logging.getLogger(__name__)
 
 
 class ClassHierarchyDescriptor:
@@ -54,9 +52,9 @@ class ClassHierarchyDescriptor:
                 # TODO: Add a better verification system
                 return True
             else:
-                log.error(f'VerifyChd: attributes field is negative. ')
+                Utils.LogToFile(f'VerifyChd: attributes field is negative. ')
         else:
-            log.error(f'VerifyChd: signature field is NOT 0x0. ')
+            Utils.LogToFile(f'VerifyChd: signature field is NOT 0x0. ')
         return False
 
     def DefineDataVar(self) -> bool:
@@ -68,7 +66,7 @@ class ClassHierarchyDescriptor:
             Utils.LogToFile(f'ClassHierarchyDescriptor: Defined data var at {hex(self.base_addr)}')
             return True
         except Exception as e:
-            log.error(f'ClassHierarchyDescriptor: Failed to Define data var at {hex(self.base_addr)}')
+            Utils.LogToFile(f'ClassHierarchyDescriptor: Failed to Define data var at {hex(self.base_addr)}')
             return False
 
     def MapBaseClassArray(self, base_class_array: BaseClassArray):
@@ -77,8 +75,8 @@ class ClassHierarchyDescriptor:
         :return:
         """
         if ClassContext.class_hierarchy_desctiptors.get(self.base_addr):
-            log.error(f'ClassHierarchyDescriptor: Multiple class hierarchy descriptors pointed '
-                          f'to at {hex(self.base_addr)}')
+            Utils.LogToFile(f'ClassHierarchyDescriptor: Multiple class hierarchy descriptors pointed '
+                            f'to at {hex(self.base_addr)}')
         else:
             ClassContext.class_hierarchy_desctiptors.update(
                 {

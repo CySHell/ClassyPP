@@ -75,7 +75,6 @@ def DefinevTableFunctions(bv: bn.binaryview, class_hierarchy_graph: DiGraph):
 
     Utils.LogToFile(f'mapped_functions: {mapped_functions}')
     for vtable_function, info in mapped_functions.items():
-        print(f'DefinevTableFunctions: {info}')
         for function_index, class_list in info.items():
             if len(class_list) > 1:
                 lca: int = GetLowestCommonAncestor(class_list, class_hierarchy_graph)

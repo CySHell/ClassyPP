@@ -2,9 +2,6 @@ import binaryninja as bn
 from typing import *
 from .BaseClassDescriptor import BaseClassDescriptor
 from ..Common import Utils
-import logging
-
-log = logging.getLogger(__name__)
 
 
 class BaseClassArray:
@@ -41,5 +38,5 @@ class BaseClassArray:
             Utils.LogToFile(f'BaseClassArray: Defined data var at {hex(self.base_addr)}')
             return True
         except Exception as e:
-            log.error(f'BaseClassArray: Failed to define data var at {hex(self.base_addr)}, reason: {e}')
+            Utils.LogToFile(f'BaseClassArray: Failed to define data var at {hex(self.base_addr)}, reason: {e}')
             return False

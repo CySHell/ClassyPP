@@ -1,7 +1,6 @@
 import binaryninja as bn
 from typing import *
-
-from Common.Utils import RecordAllInformation
+import json
 from .CompleteObjectLocator import CompleteObjectLocator
 from . import ClassHierarchyDeduction
 from ..Common import Utils
@@ -20,6 +19,16 @@ complete_object_locators: Dict[int, Tuple[int, int, int, List[int]]] = dict()
 class_hierarchy_desctiptors: Dict[int, Tuple[str, List[int]]] = dict()
 # {Bcd_addr: Bcd_obj}
 base_class_descriptors: Dict[int, dict] = dict()
+
+
+def RecordAllInformation():
+    Utils.LogToFile(f'Recording to file {Config.BASE_CLASS_DESCRIPTORS_RECORD_FILE}')
+    with open(Config.COMPLETE_OBJECT_LOCATOR_RECORD_FILE, 'w') as col_file:
+        col_file.write(json.dumps(complete_object_locators, indent=4))
+    with open(Config.CLASS_HIERARCHY_DESCRIPTORS_RECORD_FILE, 'w') as chd_file:
+        chd_file.write(json.dumps(class_hierarchy_desctiptors, indent=4))
+    with open(Config.BASE_CLASS_DESCRIPTORS_RECORD_FILE, 'w') as bcd_file:
+        bcd_file.write(json.dumps(base_class_descriptors, indent=4))
 
 
 class GlobalClassContextManager:
