@@ -32,4 +32,4 @@ PATH_TO_LAYOUT_FOLDER = os.path.expandvars(
     '%CLASS_LAYOUT_FOLDER%')
 
 PATH_TO_CLASS_LAYOUTS_FILE = os.path.expandvars(
-    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\class_layouts.txt')
+    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\class_layouts.layout')
