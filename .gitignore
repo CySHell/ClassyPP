@@ -1,0 +1,12 @@
+# IntelliJ project files
+.idea
+*.iml
+out
+gen
+
+# log files
+*.txt
+*.exe
+*.graphml
+*.gexf
+*.drawiodir
