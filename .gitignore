@@ -10,3 +10,5 @@ gen
 *.graphml
 *.gexf
 *.drawiodir
+
+**/__pycache__
