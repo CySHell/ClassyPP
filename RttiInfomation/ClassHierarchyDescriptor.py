@@ -48,11 +48,16 @@ class ClassHierarchyDescriptor:
     def VerifyChd(self) -> bool:
         Utils.LogToFile(f'VerifyChd: Verifying {self.__repr__()}')
         if self.signature == 0x0:
-            if self.attributes >= 0x0:
+            # Only handle single and multiple inheritance
+            # TODO : Add Virtual and Multiple Virtual inheritance support
+            if self.attributes == 0x0 or self.attributes == 0x1:
                 # TODO: Add a better verification system
                 return True
+            elif self.attributes == 0x2 or self.attributes == 0x3:
+                Utils.LogToFile(f'VerifyChd: Attributes indicate Virtual inheritance is present, not currently '
+                                f'supported')
             else:
-                Utils.LogToFile(f'VerifyChd: attributes field is negative. ')
+                Utils.LogToFile(f'VerifyChd: attributes field is not valid - Attribute = {self.attributes}. ')
         else:
             Utils.LogToFile(f'VerifyChd: signature field is NOT 0x0. ')
         return False

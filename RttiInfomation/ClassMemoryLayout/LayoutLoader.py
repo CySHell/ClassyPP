@@ -1,5 +1,5 @@
 import json
-from .. import Config
+from ... import Config
 from typing import *
 from .LayoutParser import ClassLayout
 

@@ -12,17 +12,19 @@ PTR_SIZE = INT_SIZE
 ######################################################
 #   Logging
 ######################################################
+ENABLE_LOGGING = True
+
 COMPLETE_OBJECT_LOCATOR_RECORD_FILE = os.path.expandvars(
-    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\ColRecord.txt')
+    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\Logs\\ColRecord.txt')
 CLASS_HIERARCHY_DESCRIPTORS_RECORD_FILE = os.path.expandvars(
-    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\ChdRecord.txt')
+    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\Logs\\ChdRecord.txt')
 BASE_CLASS_DESCRIPTORS_RECORD_FILE = os.path.expandvars(
-    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\BcdRecord.txt')
+    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\Logs\\BcdRecord.txt')
 
 LOGFILE_FULL_PATH = os.path.expandvars(
-    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\log_debug.txt')
+    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\Logs\\log_debug.txt')
 DEMANGLER_FULL_PATH = os.path.expandvars(
-    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\demumble.exe')
+    '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\Common\\demumble.exe')
 
 GRAPH_FILE_FULL_PATH = os.path.expandvars(
     '%USERPROFILE%\\AppData\\Roaming\\Binary Ninja\\plugins\\CppInspector\\')

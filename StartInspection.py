@@ -6,10 +6,10 @@ CppInspector.StartInspection.inspect(bv)
 """
 
 import binaryninja as bn
-from .ClassHierarchy.ClassContext import GlobalClassContextManager
+from .RttiInfomation.ClassContext import GlobalClassContextManager
 from .Common import Utils
 from . import Config
-from . import TypeCreation
+from .RttiInfomation import TypeCreation
 
 
 def internal_inspect(bv: bn.binaryview):

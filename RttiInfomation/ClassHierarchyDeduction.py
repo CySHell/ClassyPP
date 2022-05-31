@@ -126,17 +126,17 @@ def CreateBcdHierarchyRecursively(base_class_array: List[int],
 def WriteGraphToFile(graph: DiGraph, gexf=True, graphml=False):
     if gexf:
         # To read the following stored graph: read_gexf(Config.GRAPH_FILE_FULL_PATH)
-        nx.write_gexf(graph, Config.GRAPH_FILE_FULL_PATH + 'ClassHierarchy.gexf')
+        nx.write_gexf(graph, Config.GRAPH_FILE_FULL_PATH + 'RttiInfomation.gexf')
 
     if graphml:
         # Write the graph in graphml form in order to be able to upload it to other databases (such as neo4j)
         # In neo4j:
-        #           CALL apoc.import.graphml('ClassHierarchy.graphml', {storeNodeIds: true})
+        #           CALL apoc.import.graphml('RttiInfomation.graphml', {storeNodeIds: true})
         #           MATCH (n)
         #           CALL apoc.create.addLabels([id(n)], [n.id])
         #           yield node
         #           return node
-        nx.write_graphml(graph, Config.GRAPH_FILE_FULL_PATH + 'ClassHierarchy.graphml')
+        nx.write_graphml(graph, Config.GRAPH_FILE_FULL_PATH + 'RttiInfomation.graphml')
 
 
 def CreateHierarchyGraph() -> nx.DiGraph:

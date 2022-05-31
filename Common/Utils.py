@@ -17,7 +17,8 @@ log_file = open(Config.LOGFILE_FULL_PATH, 'w')
 
 
 def LogToFile(log_str: str):
-    log_file.write(f'\n {log_str} \n')
+    if Config.ENABLE_LOGGING:
+        log_file.write(f'\n {log_str} \n')
 
 
 

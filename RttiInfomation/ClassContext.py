@@ -5,7 +5,7 @@ from .CompleteObjectLocator import CompleteObjectLocator
 from . import ClassHierarchyDeduction
 from ..Common import Utils
 from .. import Config
-from ..ClassMemoryLayout import ClassStructCreation
+from .ClassMemoryLayout import ClassStructCreation
 
 ###############################################################################################
 #                GLOBAL STRUCTS
@@ -53,7 +53,7 @@ class GlobalClassContextManager:
                             self.bv, Utils.DemangleName(Col.mangled_class_name)
                         )
                         if std_class_name:
-                            print(f'DefineRTTI: Successfully defined {std_class_name} type in BinaryView.')
+                            Utils.LogToFile(f'DefineRTTI: Successfully defined {std_class_name} type in BinaryView.')
                         if complete_object_locators.get(current_address):
                             Utils.LogToFile(f'DefineRTTI: multiple col in single address - {hex(current_address)}')
                         else:

@@ -1,10 +1,11 @@
-from . import StartInspection, TypeCreation
-from .ClassHierarchy import BaseClassDescriptor, ClassContext, \
+from . import StartInspection
+from .RttiInfomation import TypeCreation
+from .RttiInfomation import BaseClassDescriptor, ClassContext, \
     ClassHierarchyDescriptor, CompleteObjectLocator, TypeDescriptor, \
     BaseClassArray, VirtualFunctionTable, ClassHierarchyDeduction
 from .Common import Utils
 from . import Config
-from .ClassMemoryLayout import LayoutLoader, LayoutParser, ClassStructCreation
+from .RttiInfomation.ClassMemoryLayout import ClassStructCreation, LayoutParser, LayoutLoader
 import importlib
 
 

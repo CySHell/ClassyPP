@@ -34,7 +34,7 @@ class VFTABLE:
             try:
                 # Define the Complete object locator
                 self.bv.define_user_data_var(self.base_addr,
-                                             self.bv.parse_type_string(f'PVOID[{self.vfTable_length}]')[0],
+                                             self.bv.parse_type_string(f'void*[{self.vfTable_length}]')[0],
                                              self.demangled_name)
                 Utils.LogToFile(f'vfTable: Defined data var at {hex(self.base_addr)}')
                 return True

@@ -293,4 +293,4 @@ if __name__ == "__main__":
     with open(f'{Config.PATH_TO_CLASS_LAYOUTS_FILE}', "w") as f:
         f.write(json.dumps(class_layouts, indent=4))
 else:
-    from .. import Config
+    from ... import Config

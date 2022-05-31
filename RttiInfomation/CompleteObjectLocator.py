@@ -97,6 +97,7 @@ class CompleteObjectLocator:
 
         class_name_addr = self.pTypeDescriptor + Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR
         class_name_string = self.bv.get_ascii_string_at(class_name_addr)
+        Utils.LogToFile(f'CompleteObjectLocator: Found Class name - {class_name_string.value}.')
         return class_name_string.value
 
     def GetVtableAddr(self) -> int:
