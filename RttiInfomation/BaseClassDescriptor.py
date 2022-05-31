@@ -107,6 +107,6 @@ class BaseClassDescriptor:
     def get_mangled_class_name(self) -> str:
         pass  # bn.log_info(f'BaseClassDescriptor: Extracting class name.')
 
-        class_name_addr = self.pTypeDescriptor + Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR
+        class_name_addr = self.pTypeDescriptor + Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X64
         class_name_string = self.bv.get_ascii_string_at(class_name_addr)
         return class_name_string.value

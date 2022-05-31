@@ -45,7 +45,7 @@ class GlobalClassContextManager:
             if sect.semantics is bn.SectionSemantics.ReadWriteDataSectionSemantics or \
                     sect.semantics is bn.SectionSemantics.ReadOnlyDataSectionSemantics:
                 current_address = sect.start
-                while current_address < sect.end - Config.RTTI_COMPLETE_OBJECT_LOCATOR_SIZE:
+                while current_address < sect.end - Config.RTTI_COMPLETE_OBJECT_LOCATOR_SIZE_X64:
                     Col: CompleteObjectLocator = CompleteObjectLocator(self.bv, current_address)
                     if Col.verified:
                         Utils.LogToFile(f'DefineRTTI: Defined {Col.__repr__()} \n')
@@ -54,6 +54,7 @@ class GlobalClassContextManager:
                         )
                         if std_class_name:
                             Utils.LogToFile(f'DefineRTTI: Successfully defined {std_class_name} type in BinaryView.')
+                            print(f'Completed Processing - Class {std_class_name} ')
                         if complete_object_locators.get(current_address):
                             Utils.LogToFile(f'DefineRTTI: multiple col in single address - {hex(current_address)}')
                         else:
@@ -68,8 +69,8 @@ class GlobalClassContextManager:
                             )
 
                         Utils.LogToFile(f'DefineRTTI: defined at current address {hex(current_address)}, increasing to '
-                                        f'addr {hex(current_address + Config.RTTI_COMPLETE_OBJECT_LOCATOR_SIZE)}')
-                        current_address += Config.RTTI_COMPLETE_OBJECT_LOCATOR_SIZE
+                                        f'addr {hex(current_address + Config.RTTI_COMPLETE_OBJECT_LOCATOR_SIZE_X64)}')
+                        current_address += Config.RTTI_COMPLETE_OBJECT_LOCATOR_SIZE_X64
                     else:
                         # A Col will be 4 bytes aligned
                         current_address += 4

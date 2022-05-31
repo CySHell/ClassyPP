@@ -38,6 +38,7 @@ class CompleteObjectLocator:
                     self.class_hierarchy_descriptor_address = class_hierarchy_descriptor.base_addr
                     # Define the vfTable of this class
                     vfTable_address = self.GetVtableAddr()
+                    Utils.LogToFile(f'CompleteObjectLocator: Processing vfTable at: {vfTable_address}')
                     vft: VirtualFunctionTable.VFTABLE = VirtualFunctionTable.VFTABLE(
                         self.bv,
                         vfTable_address,
@@ -95,7 +96,7 @@ class CompleteObjectLocator:
     def get_mangled_class_name(self) -> str:
         Utils.LogToFile(f'CompleteObjectLocator: Extracting class name.')
 
-        class_name_addr = self.pTypeDescriptor + Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR
+        class_name_addr = self.pTypeDescriptor + Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X64
         class_name_string = self.bv.get_ascii_string_at(class_name_addr)
         Utils.LogToFile(f'CompleteObjectLocator: Found Class name - {class_name_string.value}.')
         return class_name_string.value
@@ -104,7 +105,7 @@ class CompleteObjectLocator:
         if self.vTable:
             return self.vTable.base_addr
         else:
-            return list(self.bv.get_data_refs(self.base_addr))[0] + Config.INT_SIZE
+            return list(self.bv.get_data_refs(self.base_addr))[0] + Config.PTR_SIZE_X64
 
     def GetVtableLength(self):
         return self.vTable.GetLength()
