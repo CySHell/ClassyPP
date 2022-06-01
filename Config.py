@@ -44,6 +44,7 @@ GRAPH_FILE_FULL_PATH = os.path.expandvars(
 # This folder contains files produced by the output of the MSVC CL compiler with the flag /d1reportAllClassLayout.
 # Each file should start with "layout_" .
 # Define the folder as a Windows environment variable named "CLASS_LAYOUT_FOLDER".
+# This is only used by the LayoutParser.py module, not during normal plugin operation.
 PATH_TO_LAYOUT_FOLDER = os.path.expandvars(
     '%CLASS_LAYOUT_FOLDER%')
 

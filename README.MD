@@ -12,7 +12,7 @@ This plugin performs 3 main actions:
 
 **RTTI Inspection**
 
-Search the exeutable for RTTI (Real-Time Type information) structures, and define the actual symbols 
+Search the executable for RTTI (Real-Time Type information) structures, and define the actual symbols 
 with types within the BinaryView, including demangled class names.
 
 -BEFORE-
@@ -60,7 +60,8 @@ The plugin will autoamtically define any class type in its database if the corre
 
 ## Installation
 
-This plugin installs as a normal binja plugin - just clone it into the plugins directory.
+This plugin installs as a normal binja plugin - just clone it into the plugins' directory.
+Edit the Config.py file for values suitable to your environment.
 	
 ## Limitations:
 	- Supports MSVC Only
