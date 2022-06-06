@@ -1,8 +1,8 @@
 """
-import CppInspector
+import ClassyPP
 import importlib
-importlib.reload(CppInspector);
-CppInspector.StartInspection.inspect(bv)
+importlib.reload(ClassyPP);
+ClassyPP.StartInspection.inspect(bv)
 """
 
 import binaryninja as bn
