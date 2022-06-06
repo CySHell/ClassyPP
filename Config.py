@@ -22,24 +22,24 @@ PTR_SIZE_X64 = INT64_T
 ENABLE_LOGGING = False
 
 COMPLETE_OBJECT_LOCATOR_RECORD_FILE = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\CppInspector\\Logs\\ColRecord.txt')
+    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\ColRecord.txt')
 CLASS_HIERARCHY_DESCRIPTORS_RECORD_FILE = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\CppInspector\\Logs\\ChdRecord.txt')
+    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\ChdRecord.txt')
 BASE_CLASS_DESCRIPTORS_RECORD_FILE = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\CppInspector\\Logs\\BcdRecord.txt')
+    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\BcdRecord.txt')
 
 LOGFILE_FULL_PATH = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\CppInspector\\Logs\\log_debug.txt')
+    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\log_debug.txt')
 
 ######################################################
 #   Class info extraction utilities
 ######################################################
 
 DEMANGLER_FULL_PATH = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\CppInspector\\Common\\demumble.exe')
+    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Common\\demumble.exe')
 
 GRAPH_FILE_FULL_PATH = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\CppInspector\\')
+    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\')
 
 # This folder contains files produced by the output of the MSVC CL compiler with the flag /d1reportAllClassLayout.
 # Each file should start with "layout_" .
@@ -50,4 +50,4 @@ PATH_TO_LAYOUT_FOLDER = os.path.expandvars(
 
 # This file contains the JSON format for all the classes that were parsed from MSVC output in %PATH_TO_LAYOUT_FOLDER%
 PATH_TO_CLASS_LAYOUTS_FILE = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\CppInspector\\RttiInfomation\\ClassMemoryLayout\\class_layouts.layout')
+    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\RttiInfomation\\ClassMemoryLayout\\class_layouts.layout')
