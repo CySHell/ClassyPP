@@ -31,7 +31,7 @@
       "ClassyPP uses an external C++ demangler - Demumble - https://github.com/nico/demumble/releases."
     ]
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "CyShell",
   "minimumbinaryninjaversion": 3233
 }
