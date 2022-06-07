@@ -10,12 +10,15 @@ from .RttiInfomation.ClassContext import GlobalClassContextManager
 from .Common import Utils
 from . import Config
 from .RttiInfomation import TypeCreation
+from .ClassDataStructureDetection.Constructors import DetectConstructor
+
 
 def is_bv_valid_for_plugin(bv: bn.binaryview) -> bool:
     if bv.arch.name != "x86_64":
         print(f'ClassyPP: Detected non 64bit executable - Unsupported.')
         return False
     return True
+
 
 class InspectInBackground(bn.BackgroundTaskThread):
 
@@ -25,6 +28,7 @@ class InspectInBackground(bn.BackgroundTaskThread):
 
     def run(self):
         self.RTTI_inspection()
+        DetectConstructor.detect(self.bv)
 
     def RTTI_inspection(self):
         Utils.LogToFile(f'Logging filename: {Config.LOGFILE_FULL_PATH}')
@@ -45,4 +49,3 @@ def inspect(bv: bn.binaryview):
     else:
         background_thread = InspectInBackground(bv)
         background_thread.start()
-

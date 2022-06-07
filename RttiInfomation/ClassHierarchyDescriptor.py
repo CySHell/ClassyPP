@@ -11,7 +11,6 @@ class ClassHierarchyDescriptor:
         self.base_addr: int = base_addr
         self.mangled_class_name: str = mangled_class_name
         self.demangled_class_name: str = Utils.DemangleName(self.mangled_class_name)
-
         # Always 0 ?
         self.signature: int = self.bv.read_int(base_addr, 0x4)
         # attributes = 0 - normal inheritance

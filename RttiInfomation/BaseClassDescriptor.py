@@ -36,7 +36,6 @@ class BaseClassDescriptor:
 
         self.mangled_class_name = self.get_mangled_class_name()
         self.demangled_class_name = Utils.DemangleName(self.mangled_class_name)
-
         if ClassContext.base_class_descriptors.get(self.base_addr):
             self.verified = True
         else:

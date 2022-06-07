@@ -1,4 +1,5 @@
 import binaryninja as bn
+from typing import List
 
 
 def detect(bv: bn.binaryview):
@@ -16,14 +17,21 @@ def detect(bv: bn.binaryview):
                             # pointer is to a struct, this is de-referencing offset 0x0.
                             if instr.operands[0].operation == 23:
                                 if type(instr.operands[0].operands[0]) == bn.highlevelil.HighLevelILVar:
-                                    pointer: bn.highlevelil.HighLevelILVar = instr.operands[1].operands[0]
+                                    pointer: int = instr.operands[1].operands[0]
                                     data_refs = list(bv.get_data_refs_from(pointer))
                                     if data_refs:
                                         if len(data_refs) != 1:
-                                            print(f'Error, too many data refs for {pointer}')
+                                            # print(f'Error, too many data refs for {pointer}')
+                                            pass
                                         else:
                                             # Check if this is a function pointer
                                             if bv.get_function_at(data_refs[0]):
-                                                print(hex(instr.address))
+                                                constructor_addr: List[
+                                                    bn.function.Function] = bv.get_functions_containing(instr.address)
+                                                if len(constructor_addr) == 1:
+                                                    print(
+                                                        f'Suspected constructor at - {hex(constructor_addr[0].start)},'
+                                                        f' vfTable address is - {hex(pointer)}')
                                 else:
-                                    print(f'Error in instruction {instr}')
+                                    # print(f'Error in instruction {instr}')
+                                    pass
