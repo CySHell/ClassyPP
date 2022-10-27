@@ -14,20 +14,29 @@ class BaseClassArray:
         self.base_class_descriptor_array: List[int] = list()
         self.verified: bool = True
 
-        for entry in range(self.entry_count):
-            current_class_descriptor_addr: int = self.bv.read_int(self.base_addr + 0x4 * entry, 4) + bv.start
-            base_class_descriptor = BaseClassDescriptor(self.bv, current_class_descriptor_addr)
-            if base_class_descriptor.verified:
-                self.base_class_descriptor_array.append(current_class_descriptor_addr)
+        for index in range(self.entry_count):
+            if self.VerifyClassDescriptorAddressAtIndex(index):
+                if self.DefineDataVar():
+                    pass
+                else:
+                    self.verified = False
+                    break
             else:
-                # If a single base class descriptor is not verified the whole complete object locator is failed
                 self.verified = False
                 break
 
-        if self.verified and self.DefineDataVar():
-            pass
+    def VerifyClassDescriptorAddressAtIndex(self, index) -> bool:
+        base_of_file = 0
+        if self.bv.arch.name == "x86_64":
+            base_of_file = Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
+        current_class_descriptor_addr: int = self.bv.read_int(self.base_addr + 0x4 * index, 4) + base_of_file
+        base_class_descriptor = BaseClassDescriptor(self.bv, current_class_descriptor_addr)
+        if base_class_descriptor.verified:
+            self.base_class_descriptor_array.append(current_class_descriptor_addr)
+            return True
         else:
-            self.verified = False
+            # If a single base class descriptor is not verified the whole complete object locator is failed
+            return False
 
     def DefineDataVar(self) -> bool:
         Utils.LogToFile(f'BaseClassArray: Attempt to define data var at {hex(self.base_addr)}')

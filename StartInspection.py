@@ -14,10 +14,11 @@ from .ClassDataStructureDetection.Constructors import DetectConstructor
 
 
 def is_bv_valid_for_plugin(bv: bn.binaryview) -> bool:
-    if bv.arch.name != "x86_64":
-        print(f'ClassyPP: Detected non 64bit executable - Unsupported.')
+    if bv.arch.name == "x86_64" or bv.arch.name == "x86":
+        return True
+    else:
+        print(f'ClassyPP: Executable CPU Arch is: {bv.arch.name}. This plugin supports only x86 32/64 bit executables.')
         return False
-    return True
 
 
 class InspectInBackground(bn.BackgroundTaskThread):

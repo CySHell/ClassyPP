@@ -1,6 +1,24 @@
 import json
 import subprocess
+
+import binaryninja.binaryview
+
 from .. import Config
+
+
+def GetBaseOfFileContainingAddress(bv: binaryninja.binaryview.BinaryView, addr: int) -> int:
+    # When loading other files, such as dlls, into the memory space of the current bv we need
+    # to determine the base of the file in order to calculate relative addresses.
+    section_name: str = bv.get_sections_at(addr)[0].name
+    base_file_name_array = section_name.split(".")
+    base_file_name = base_file_name_array[0]
+
+    if base_file_name and len(base_file_name_array) != 1:
+        # This function assumes the bv contains the base address of the file in a metadata
+        # variable named after the file.
+        return bv.query_metadata(base_file_name)
+    else:
+        return bv.start
 
 
 def DemangleName(mangled_name: str) -> str:
@@ -18,6 +36,3 @@ log_file = open(Config.LOGFILE_FULL_PATH, 'w')
 def LogToFile(log_str: str):
     if Config.ENABLE_LOGGING:
         log_file.write(f'\n {log_str} \n')
-
-
-

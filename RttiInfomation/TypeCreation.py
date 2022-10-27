@@ -178,9 +178,6 @@ def Define_RTTIBaseClassDescriptor(bv: bn.binaryview) -> bool:
 
 def Define_RTTICompleteObjectLocator(bv: bn.binaryview):
     try:
-        ################################
-        # _RTTI_RELATIVE_TYPEINFO = True
-
         _RTTICompleteObjectLocator_relative = bn.types.Type.structure(
             members=[
                 (bv.parse_type_string("unsigned int")[0], 'signature'),
@@ -201,7 +198,6 @@ def Define_RTTICompleteObjectLocator(bv: bn.binaryview):
                             bv.parse_type_string('_RTTICompleteObjectLocator_relative')[0])
 
         return True
-
     except Exception as e:
         Utils.LogToFile(f"Define_RTTICompleteObjectLocator: Failed to define RTTICompleteObjectLocator - {e}")
         return False

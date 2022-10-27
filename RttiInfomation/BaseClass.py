@@ -17,7 +17,7 @@ class BaseClassDescriptor:
         self.relative = relative
         if self.relative:
             # Type descriptor of the base class.
-            self.pTypeDescriptor = self.bv.read_int(self.base_addr, 0x4) + self.bv.start
+            self.pTypeDescriptor = self.bv.read_int(self.base_addr, 0x4) + Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
             # Number of direct bases of this base class.
             self.numContainedBases: int = self.bv.read_int(self.base_addr + 0x4, 0x4)
             # vfTable offset (only if pdisp = -1)
@@ -35,7 +35,7 @@ class BaseClassDescriptor:
             # ???
             self.attributes: int = self.bv.read_int(self.base_addr + 0x14, 0x4)
             # RTTIClassHierarchyDescriptor of this base class
-            self.pClassDescriptor: int = self.bv.read_int(self.base_addr + 0x18, 0x4) + self.bv.start
+            self.pClassDescriptor: int = self.bv.read_int(self.base_addr + 0x18, 0x4) + Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
         else:
             Utils.LogToFile(f'BaseClassDescriptor: non-relative addressing not implemented yet.')
 
@@ -75,7 +75,7 @@ class BaseClassArray:
         self.DefineDataVar()
         self.base_class_descriptor_array: List[BaseClassDescriptor] = list()
         for entry in range(self.entry_count):
-            current_class_descriptor_addr: int = self.bv.read_int(self.base_addr + 0x4 * entry, 4) + bv.start
+            current_class_descriptor_addr: int = self.bv.read_int(self.base_addr + 0x4 * entry, 4) + Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
             self.base_class_descriptor_array.append(
                 BaseClassDescriptor(self.bv, current_class_descriptor_addr, relative)
             )

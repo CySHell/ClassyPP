@@ -9,6 +9,7 @@ from typing import *
 class CompleteObjectLocator:
 
     def __init__(self, bv: bn.binaryview, base_addr: int):
+        self.mangled_class_name = None
         self.bv: bn.binaryview = bv
         self.base_addr: int = base_addr
         self.vTable: Optional[VirtualFunctionTable.VFTABLE] = None
@@ -22,31 +23,46 @@ class CompleteObjectLocator:
 
         Utils.LogToFile(f'CompleteObjectLocator: Processing COL at address {hex(self.base_addr)}')
 
-        # Fix up addresses if relative
+        # Fix up information for 64 \ 32 bit
         self.relative = True
-        self.pTypeDescriptor = self.bv.read_int(self.base_addr + 0xC, 0x4) + bv.start
-        self.pClassDescriptor = self.bv.read_int(self.base_addr + 0x10, 0x4) + bv.start
-        self.pSelf = self.bv.read_int(self.base_addr + 0x14, 0x4) + bv.start
+        self.pTypeDescriptor = self.GetTypeDescriptorAddress()
+        self.pClassDescriptor = self.GetClassDescriptorAddress()
+        self.pSelf = self.GetSelfPointer()
+        self.name_string_offset_inside_typedescriptor = self.GetNameStringOffset()
+
         # Verify All fields and pointers match up to a real Complete Object Locator
         self.verified: bool = False
+
         if self.VerifyCol():
-            self.mangled_class_name: str = self.get_mangled_class_name()
-            # Utils.LogToFile(f'CompleteObjectLocator: Processing class {self.mangled_class_name}')
-            class_hierarchy_descriptor = ClassHierarchyDescriptor(bv, self.pClassDescriptor, self.mangled_class_name)
-            if class_hierarchy_descriptor.verified:
-                if self.DefineDataVar():
-                    self.class_hierarchy_descriptor_address = class_hierarchy_descriptor.base_addr
-                    # Define the vfTable of this class
-                    vfTable_address = self.GetVtableAddr()
-                    Utils.LogToFile(f'CompleteObjectLocator: Processing vfTable at: {vfTable_address}')
-                    vft: VirtualFunctionTable.VFTABLE = VirtualFunctionTable.VFTABLE(
-                        self.bv,
-                        vfTable_address,
-                        f'{Utils.DemangleName(self.mangled_class_name)}_vfTable'
-                    )
-                    if vft.verified:
-                        self.vTable = vft
-                        self.verified = True
+            self.verified = True
+
+    def GetNameStringOffset(self):
+        if self.bv.arch.name == "x86_64":
+            return Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X64
+        else:
+            return Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X32
+
+    def GetTypeDescriptorAddress(self):
+        BaseAddressOfFile: int = 0
+        if self.bv.arch.name == "x86_64":
+            # We are dealing with 64 bit, Meaning a relative address. We get the base address of the file
+            # and add it to the relative address given.
+            BaseAddressOfFile: int = Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
+        return self.bv.read_int(self.base_addr + 0xC, 0x4) + BaseAddressOfFile
+
+    def GetClassDescriptorAddress(self):
+        BaseAddressOfFile: int = 0
+        if self.bv.arch.name == "x86_64":
+            # We are dealing with 64 bit, Meaning a relative address. We get the base address of the file
+            # and add it to the relative address given.
+            BaseAddressOfFile: int = Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
+        return self.bv.read_int(self.base_addr + 0x10, 0x4) + BaseAddressOfFile
+
+    def GetSelfPointer(self):
+        BaseAddressOfFile: int = 0
+        if self.bv.arch.name == "x86_64":
+            BaseAddressOfFile: int = Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
+            return self.bv.read_int(self.base_addr + 0x14, 0x4) + BaseAddressOfFile
 
     def __repr__(self):
         return f'CompleteObjectLocator {hex(self.base_addr)} \n' \
@@ -57,7 +73,7 @@ class CompleteObjectLocator:
                f'     pClassDescriptor = {hex(self.pClassDescriptor)} \n' \
                f'     pSelf            = {hex(self.pSelf)}'
 
-    def DefineDataVar(self):
+    def DefineDataVarForCol(self):
         Utils.LogToFile(f'CompleteObjectLocator: Attempt to define data var at {hex(self.base_addr)}')
         try:
             # Define the Complete object locator
@@ -77,26 +93,65 @@ class CompleteObjectLocator:
         """
         return self.class_hierarchy_descriptor_address
 
-    def VerifyCol(self) -> bool:
-        """
-        Verify this is really a Complete Object Locator.
-        :return: Verification Succeed \ Fail
-        """
-        Utils.LogToFile(f'VerifyCol: Verifying {self.__repr__()}')
-        if len(list(self.bv.get_data_refs(self.base_addr))) == 0x1:
+    def VerifyColSignature(self) -> bool:
+        if self.bv.arch.name == "x86_64":
             if self.signature == 0x1:
-                if self.pSelf == self.base_addr:
-                    return True
-                else:
-                    Utils.LogToFile(f'VerifyCol: pSelf field does NOT point to self.')
+                # 64 bit executable signature is 0x1
+                return True
             else:
-                Utils.LogToFile(f'VerifyCol: Signature field is NOT 0x1. Signature 0x0 means this is a 32bit executable.')
-        return False
+                Utils.LogToFile(f'VerifyColSignature: Signature field is NOT 0x1.')
+                return False
+        else:
+            if self.signature == 0x0:
+                # 32 bit executables signature is 0x0
+                return True
+            else:
+                Utils.LogToFile(f'VerifyColSignature: Signature field is NOT 0x0.')
+                return False
+
+    def VerifySelfPointer(self) -> bool:
+        if self.bv.arch.name == "x86_64":
+            if self.pSelf == self.base_addr:
+                return True
+            else:
+                Utils.LogToFile(f'VerifySelfPointer: pSelf field does NOT point to self.')
+                return False
+        else:
+            if self.pSelf == 0x0:
+                # 32 bit executables pSelf field is 0x0
+                return True
+            else:
+                Utils.LogToFile(f'VerifySelfPointer: pSelf field is not 0x0.')
+                return False
+
+    def VerifyClassHierarchyDescriptor(self) -> bool:
+        self.mangled_class_name: str = self.get_mangled_class_name()
+        class_hierarchy_descriptor = ClassHierarchyDescriptor(self.bv, self.pClassDescriptor,
+                                                              self.mangled_class_name)
+        if class_hierarchy_descriptor.verified:
+            self.class_hierarchy_descriptor_address = class_hierarchy_descriptor.base_addr
+            return True
+        else:
+            return False
+
+    def DefineVirtualFuncTable(self):
+        # Define the vfTable of this class
+        vfTable_address = self.GetVtableAddr()
+        Utils.LogToFile(f'CompleteObjectLocator: Processing vfTable at: {vfTable_address}')
+        vft: VirtualFunctionTable.VFTABLE = VirtualFunctionTable.VFTABLE(
+            self.bv,
+            vfTable_address,
+            f'{Utils.DemangleName(self.mangled_class_name)}_vfTable'
+        )
+        if vft.verified:
+            self.vTable = vft
+            return True
+        else:
+            return False
 
     def get_mangled_class_name(self) -> str:
         Utils.LogToFile(f'CompleteObjectLocator: Extracting class name.')
-
-        class_name_addr = self.pTypeDescriptor + Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X64
+        class_name_addr = self.pTypeDescriptor + self.name_string_offset_inside_typedescriptor
         class_name_string = self.bv.get_ascii_string_at(class_name_addr)
         Utils.LogToFile(f'CompleteObjectLocator: Found Class name - {class_name_string.value}.')
         return class_name_string.value
@@ -112,3 +167,19 @@ class CompleteObjectLocator:
 
     def GetvTableFunctions(self) -> List[int]:
         return self.vTable.contained_functions
+
+    def VerifyCol(self) -> bool:
+        """
+        Verify this is really a Complete Object Locator.
+        :return: Verification Succeed \ Fail
+        """
+        Utils.LogToFile(f'VerifyCol: Verifying {self.__repr__()}')
+
+        if len(list(self.bv.get_data_refs(self.base_addr))) == 0x1:
+            if self.VerifyColSignature():
+                if self.VerifySelfPointer():
+                    if self.VerifyClassHierarchyDescriptor():
+                        if self.DefineDataVarForCol():
+                            if self.DefineVirtualFuncTable():
+                                return True
+        return False

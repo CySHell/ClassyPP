@@ -16,10 +16,23 @@ INT32_T = 0x4
 INT_SIZE_X64 = INT32_T
 PTR_SIZE_X64 = INT64_T
 
+
+######################################################
+#   64bit constants
+######################################################
+NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X32 = 0x8
+RTTI_COMPLETE_OBJECT_LOCATOR_SIZE_X32 = 0x18
+INT64_T = 0x8
+INT32_T = 0x4
+INT_SIZE_X32 = INT32_T
+PTR_SIZE_X32 = INT32_T
+
+
 ######################################################
 #   Logging
 ######################################################
 ENABLE_LOGGING = False
+ENABLE_DEBUG_LOGGING = False
 
 COMPLETE_OBJECT_LOCATOR_RECORD_FILE = os.path.expandvars(
     f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\ColRecord.txt')

@@ -14,7 +14,7 @@ def GetNumberOfBaseClasses(bcd_addr: int) -> int:
 
 
 def GetClassDescriptorFromChd(chd_addr: int) -> int:
-    return ClassContext.class_hierarchy_desctiptors[chd_addr][1][0]
+    return ClassContext.class_hierarchy_descriptors[chd_addr][1][0]
 
 
 def MapAllVirtualFunctions() -> Dict[int, Dict[int, List[int]]]:
@@ -99,7 +99,7 @@ def CreateAllBaseTypeNodes(class_hierarchy_graph: DiGraph) -> bool:
 
 
 def GetBaseClassArrayFromBcd(bcd_info: dict):
-    return ClassContext.class_hierarchy_desctiptors[int(bcd_info['pClassDescriptor'], 16)][1]
+    return ClassContext.class_hierarchy_descriptors[int(bcd_info['pClassDescriptor'], 16)][1]
 
 
 def CreateBcdHierarchyRecursively(base_class_array: List[int],

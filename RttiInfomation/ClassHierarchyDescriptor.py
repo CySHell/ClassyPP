@@ -7,6 +7,7 @@ from ..Common import Utils
 class ClassHierarchyDescriptor:
 
     def __init__(self, bv: bn.binaryview, base_addr: int, mangled_class_name: str):
+        self.base_class_array = None
         self.bv: bn.binaryview = bv
         self.base_addr: int = base_addr
         self.mangled_class_name: str = mangled_class_name
@@ -21,21 +22,17 @@ class ClassHierarchyDescriptor:
         # Number of base classes. This count includes the class itself.
         self.numBaseClasses: int = self.bv.read_int(base_addr + 0x8, 0x4)
 
-        self.pBaseClassArray: int = self.bv.read_int(base_addr + 0xC, 0x4) + bv.start
+        self.pBaseClassArray: int = self.GetBaseClassArrayAddress()
 
         self.verified: bool = False
-        if ClassContext.class_hierarchy_desctiptors.get(self.base_addr):
+        if self.VerifyChd():
             self.verified = True
-        else:
-            if self.VerifyChd():
-                ClassContext.class_hierarchy_desctiptors.update({self.base_addr: ("", list())})
-                base_class_array: BaseClassArray = BaseClassArray(bv, self.pBaseClassArray,
-                                                                  self.numBaseClasses, self.mangled_class_name)
-                if base_class_array.verified:
-                    if self.DefineDataVar():
-                        ClassContext.class_hierarchy_desctiptors.pop(self.base_addr)
-                        self.MapBaseClassArray(base_class_array)
-                        self.verified = True
+
+    def GetBaseClassArrayAddress(self):
+        base_of_file: int = 0
+        if self.bv.arch.name == "x86_64":
+            base_of_file = Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
+        return self.bv.read_int(self.base_addr + 0xC, 0x4) + base_of_file
 
     def __repr__(self):
         return f'ClassHierarchyDescriptor {hex(self.base_addr)} \n' \
@@ -44,21 +41,46 @@ class ClassHierarchyDescriptor:
                f'     numBaseClasses = {hex(self.numBaseClasses)} \n' \
                f'     pBaseClassArray = {hex(self.pBaseClassArray)} \n'
 
+    def VerifyChdSignature(self):
+        if self.signature == 0x0:
+            return True
+        else:
+            Utils.LogToFile(f'VerifyChdSignature: signature field is NOT 0x0. ')
+            return False
+
+    def VerifyChdAttributes(self) -> bool:
+        if self.attributes == 0x0 or self.attributes == 0x1:
+            # TODO: Add a better verification system
+            return True
+        elif self.attributes == 0x2 or self.attributes == 0x3:
+            Utils.LogToFile(f'VerifyChdAttributes: Attributes indicate Virtual inheritance is present, not currently '
+                            f'supported')
+        else:
+            Utils.LogToFile(f'VerifyChdAttributes: attributes field is not valid - Attribute = {self.attributes}. ')
+
+    def VerifyBaseClassArray(self) -> bool:
+        base_class_array: BaseClassArray = BaseClassArray(self.bv, self.pBaseClassArray,
+                                                          self.numBaseClasses, self.mangled_class_name)
+        if base_class_array.verified:
+            self.base_class_array = base_class_array
+            return True
+        else:
+            return False
+
     def VerifyChd(self) -> bool:
         Utils.LogToFile(f'VerifyChd: Verifying {self.__repr__()}')
-        if self.signature == 0x0:
-            # Only handle single and multiple inheritance
-            # TODO : Add Virtual and Multiple Virtual inheritance support
-            if self.attributes == 0x0 or self.attributes == 0x1:
-                # TODO: Add a better verification system
-                return True
-            elif self.attributes == 0x2 or self.attributes == 0x3:
-                Utils.LogToFile(f'VerifyChd: Attributes indicate Virtual inheritance is present, not currently '
-                                f'supported')
-            else:
-                Utils.LogToFile(f'VerifyChd: attributes field is not valid - Attribute = {self.attributes}. ')
+        if ClassContext.class_hierarchy_descriptors.get(self.base_addr):
+            # This Chd was already defined
+            return True
         else:
-            Utils.LogToFile(f'VerifyChd: signature field is NOT 0x0. ')
+            if self.VerifyChdSignature():
+                # Only handle single and multiple inheritance
+                # TODO : Add Virtual and Multiple Virtual inheritance support
+                if self.VerifyChdAttributes():
+                    if self.VerifyBaseClassArray():
+                        if self.DefineDataVar():
+                            self.MapBaseClassArray()
+                            return True
         return False
 
     def DefineDataVar(self) -> bool:
@@ -73,17 +95,17 @@ class ClassHierarchyDescriptor:
             Utils.LogToFile(f'ClassHierarchyDescriptor: Failed to Define data var at {hex(self.base_addr)}')
             return False
 
-    def MapBaseClassArray(self, base_class_array: BaseClassArray):
+    def MapBaseClassArray(self):
         """
         Add a pointer from this Class Hierarchy Descriptor to an array of base class descriptor addresses
         :return:
         """
-        if ClassContext.class_hierarchy_desctiptors.get(self.base_addr):
+        if ClassContext.class_hierarchy_descriptors.get(self.base_addr):
             Utils.LogToFile(f'ClassHierarchyDescriptor: Multiple class hierarchy descriptors pointed '
                             f'to at {hex(self.base_addr)}')
         else:
-            ClassContext.class_hierarchy_desctiptors.update(
+            ClassContext.class_hierarchy_descriptors.update(
                 {
-                    self.base_addr: (self.demangled_class_name, base_class_array.base_class_descriptor_array)
+                    self.base_addr: (self.demangled_class_name, self.base_class_array.base_class_descriptor_array)
                 }
             )

@@ -14,7 +14,8 @@ class BaseClassDescriptor:
         self.base_addr: int = base_addr
 
         # Type descriptor of the base class.
-        self.pTypeDescriptor = self.bv.read_int(self.base_addr, 0x4) + self.bv.start
+        self.pTypeDescriptor = self.bv.read_int(self.base_addr, 0x4) + \
+                               Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
         # Number of direct bases of this base class.
         self.numContainedBases: int = self.bv.read_int(self.base_addr + 0x4, 0x4)
         # vfTable offset (only if pdisp = -1)
@@ -32,7 +33,7 @@ class BaseClassDescriptor:
         # ???
         self.attributes: int = self.bv.read_int(self.base_addr + 0x14, 0x4)
         # RTTIClassHierarchyDescriptor of this base class
-        self.pClassDescriptor: int = self.bv.read_int(self.base_addr + 0x18, 0x4) + self.bv.start
+        self.pClassDescriptor: int = self.bv.read_int(self.base_addr + 0x18, 0x4) + Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
 
         self.mangled_class_name = self.get_mangled_class_name()
         self.demangled_class_name = Utils.DemangleName(self.mangled_class_name)
