@@ -143,6 +143,7 @@ def CreateHierarchyGraph() -> nx.DiGraph:
     class_hierarchy_graph: DiGraph = nx.DiGraph()
     resolved_bcd: List[int] = list()
     if CreateAllBaseTypeNodes(class_hierarchy_graph):
+        # print(ClassContext.base_class_descriptors)
         for bcd_addr, bcd_info in ClassContext.base_class_descriptors.items():
             CreateBcdHierarchyRecursively(GetBaseClassArrayFromBcd(bcd_info), resolved_bcd, class_hierarchy_graph)
 

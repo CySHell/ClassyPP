@@ -24,9 +24,7 @@ class ClassHierarchyDescriptor:
 
         self.pBaseClassArray: int = self.GetBaseClassArrayAddress()
 
-        self.verified: bool = False
-        if self.VerifyChd():
-            self.verified = True
+        self.verified = self.VerifyChd()
 
     def GetBaseClassArrayAddress(self):
         base_of_file: int = 0
@@ -49,14 +47,20 @@ class ClassHierarchyDescriptor:
             return False
 
     def VerifyChdAttributes(self) -> bool:
+        # attributes = 0 - normal inheritance
+        # attributes = 1 - multiple inheritance
+        # attributes = 2 - virtual inheritance
+        # attributes = 3 - multiple and virtual inheritance
         if self.attributes == 0x0 or self.attributes == 0x1:
             # TODO: Add a better verification system
             return True
         elif self.attributes == 0x2 or self.attributes == 0x3:
             Utils.LogToFile(f'VerifyChdAttributes: Attributes indicate Virtual inheritance is present, not currently '
                             f'supported')
+            return False
         else:
             Utils.LogToFile(f'VerifyChdAttributes: attributes field is not valid - Attribute = {self.attributes}. ')
+            return False
 
     def VerifyBaseClassArray(self) -> bool:
         base_class_array: BaseClassArray = BaseClassArray(self.bv, self.pBaseClassArray,
@@ -78,7 +82,10 @@ class ClassHierarchyDescriptor:
                 # TODO : Add Virtual and Multiple Virtual inheritance support
                 if self.VerifyChdAttributes():
                     if self.VerifyBaseClassArray():
+                        Utils.LogToFile(f'VerifyChd: sig, attributes and base class array verified for  {self.__repr__()}')
+                        ClassContext.class_hierarchy_descriptors.update({self.base_addr: ("", list())})
                         if self.DefineDataVar():
+                            ClassContext.class_hierarchy_descriptors.pop(self.base_addr)
                             self.MapBaseClassArray()
                             return True
         return False

@@ -178,20 +178,35 @@ def Define_RTTIBaseClassDescriptor(bv: bn.binaryview) -> bool:
 
 def Define_RTTICompleteObjectLocator(bv: bn.binaryview):
     try:
-        _RTTICompleteObjectLocator_relative = bn.types.Type.structure(
-            members=[
-                (bv.parse_type_string("unsigned int")[0], 'signature'),
-                (bv.parse_type_string("unsigned int")[0], 'offset'),
-                (bv.parse_type_string("unsigned int")[0], 'cdOffset'),
-                # Image relative offset of TypeDescriptor
-                (bv.parse_type_string("int")[0], 'pTypeDescriptor'),
-                # Image relative offset of _RTTIClassHierarchyDescriptor
-                (bv.parse_type_string("int")[0], 'pClassDescriptor'),
-                # Image relative offset of this object
-                (bv.parse_type_string("int")[0], 'pSelf'),
-            ],
-            type=bn.StructureVariant.StructStructureType
-        )
+        if bv.arch.name == "x86_64":
+            _RTTICompleteObjectLocator_relative = bn.types.Type.structure(
+                members=[
+                    (bv.parse_type_string("unsigned int")[0], 'signature'),
+                    (bv.parse_type_string("unsigned int")[0], 'offset'),
+                    (bv.parse_type_string("unsigned int")[0], 'cdOffset'),
+                    # Image relative offset of TypeDescriptor
+                    (bv.parse_type_string("int")[0], 'pTypeDescriptor'),
+                    # Image relative offset of _RTTIClassHierarchyDescriptor
+                    (bv.parse_type_string("int")[0], 'pClassDescriptor'),
+                    # Image relative offset of this object
+                    (bv.parse_type_string("int")[0], 'pSelf'),
+                ],
+                type=bn.StructureVariant.StructStructureType
+            )
+        else:
+            # 32 bit executable do not have a pSelf field.
+            _RTTICompleteObjectLocator_relative = bn.types.Type.structure(
+                members=[
+                    (bv.parse_type_string("unsigned int")[0], 'signature'),
+                    (bv.parse_type_string("unsigned int")[0], 'offset'),
+                    (bv.parse_type_string("unsigned int")[0], 'cdOffset'),
+                    # Image relative offset of TypeDescriptor
+                    (bv.parse_type_string("int")[0], 'pTypeDescriptor'),
+                    # Image relative offset of _RTTIClassHierarchyDescriptor
+                    (bv.parse_type_string("int")[0], 'pClassDescriptor')
+                ],
+                type=bn.StructureVariant.StructStructureType
+            )
 
         bv.define_user_type('_RTTICompleteObjectLocator_relative', _RTTICompleteObjectLocator_relative)
         bv.define_user_type('RTTICompleteObjectLocator',

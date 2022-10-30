@@ -70,7 +70,7 @@ class GlobalClassContextManager:
             self.pointer_size = Config.PTR_SIZE_X32
         else:
             self.name_string_offset_inside_typedescriptor = Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X64
-            self.rtti_complete_object_locator_size = self.rtti_complete_object_locator_size
+            self.rtti_complete_object_locator_size = Config.RTTI_COMPLETE_OBJECT_LOCATOR_SIZE_X64
             self.int_size = Config.INT_SIZE_X64
             self.pointer_size = Config.PTR_SIZE_X64
 

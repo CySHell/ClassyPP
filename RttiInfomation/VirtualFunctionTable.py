@@ -29,7 +29,7 @@ class VFTABLE:
         current_data_var_addr: int = self.base_addr
         while self.IsPointerToFunction(current_data_var_addr):
             self.vfTable_length += 1
-            current_data_var_addr += 0x8
+            current_data_var_addr += 0x8 if self.bv.arch.name == "x86_64" else 0x4
         if self.vfTable_length > 0:
             try:
                 # Define the Complete object locator

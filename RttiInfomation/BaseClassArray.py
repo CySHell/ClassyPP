@@ -30,6 +30,7 @@ class BaseClassArray:
         if self.bv.arch.name == "x86_64":
             base_of_file = Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
         current_class_descriptor_addr: int = self.bv.read_int(self.base_addr + 0x4 * index, 4) + base_of_file
+        Utils.LogToFile(f'VerifyClassDescriptorAddressAtIndex: Attempt to define base class descriptor at {hex(current_class_descriptor_addr)}')
         base_class_descriptor = BaseClassDescriptor(self.bv, current_class_descriptor_addr)
         if base_class_descriptor.verified:
             self.base_class_descriptor_array.append(current_class_descriptor_addr)

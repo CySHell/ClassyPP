@@ -38,6 +38,7 @@ class InspectInBackground(bn.BackgroundTaskThread):
             GCM: GlobalClassContextManager = GlobalClassContextManager(self.bv)
             if GCM.DefineRTTI():
                 Utils.LogToFile(f'ClassyPP: Successfully created types.')
+                print(f'Done analyzing.')
             else:
                 Utils.LogToFile(f'ClassyPP: Failed to create RTTI classes.')
         else:

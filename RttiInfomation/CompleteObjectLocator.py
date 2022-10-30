@@ -29,12 +29,18 @@ class CompleteObjectLocator:
         self.pClassDescriptor = self.GetClassDescriptorAddress()
         self.pSelf = self.GetSelfPointer()
         self.name_string_offset_inside_typedescriptor = self.GetNameStringOffset()
+        self.pointer_size = self.GetPointerSize()
 
         # Verify All fields and pointers match up to a real Complete Object Locator
         self.verified: bool = False
 
-        if self.VerifyCol():
-            self.verified = True
+        self.verified = self.VerifyCol()
+
+    def GetPointerSize(self):
+        if self.bv.arch.name == "x86":
+            return Config.PTR_SIZE_X32
+        else:
+            return Config.PTR_SIZE_X64
 
     def GetNameStringOffset(self):
         if self.bv.arch.name == "x86_64":
@@ -59,10 +65,10 @@ class CompleteObjectLocator:
         return self.bv.read_int(self.base_addr + 0x10, 0x4) + BaseAddressOfFile
 
     def GetSelfPointer(self):
-        BaseAddressOfFile: int = 0
+        base_address_of_file: int = 0
         if self.bv.arch.name == "x86_64":
-            BaseAddressOfFile: int = Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
-            return self.bv.read_int(self.base_addr + 0x14, 0x4) + BaseAddressOfFile
+            base_address_of_file: int = Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
+        return self.bv.read_int(self.base_addr + 0x14, 0x4) + base_address_of_file
 
     def __repr__(self):
         return f'CompleteObjectLocator {hex(self.base_addr)} \n' \
@@ -103,7 +109,7 @@ class CompleteObjectLocator:
                 return False
         else:
             if self.signature == 0x0:
-                # 32 bit executables signature is 0x0
+                # 32 bit executables signature is 0x0.
                 return True
             else:
                 Utils.LogToFile(f'VerifyColSignature: Signature field is NOT 0x0.')
@@ -118,7 +124,10 @@ class CompleteObjectLocator:
                 return False
         else:
             if self.pSelf == 0x0:
-                # 32 bit executables pSelf field is 0x0
+                # 32 bit executables pSelf field is 0x0.
+                # Note that in some instances observed MSVC actually places the ClassHierarchyDescriptor struct
+                # start in this location - This means that in 32 bit this field might actually be the "Signature"
+                # field of the ClassHierarchyDescriptor struct (Which is always 0).
                 return True
             else:
                 Utils.LogToFile(f'VerifySelfPointer: pSelf field is not 0x0.')
@@ -126,13 +135,18 @@ class CompleteObjectLocator:
 
     def VerifyClassHierarchyDescriptor(self) -> bool:
         self.mangled_class_name: str = self.get_mangled_class_name()
-        class_hierarchy_descriptor = ClassHierarchyDescriptor(self.bv, self.pClassDescriptor,
-                                                              self.mangled_class_name)
-        if class_hierarchy_descriptor.verified:
-            self.class_hierarchy_descriptor_address = class_hierarchy_descriptor.base_addr
-            return True
-        else:
-            return False
+        if self.mangled_class_name:
+            class_hierarchy_descriptor = ClassHierarchyDescriptor(self.bv, self.pClassDescriptor,
+                                                                  self.mangled_class_name)
+            if class_hierarchy_descriptor.verified:
+                self.class_hierarchy_descriptor_address = class_hierarchy_descriptor.base_addr
+                Utils.LogToFile(
+                    f'VerifyClassHierarchyDescriptor: Succesfully defined CHD at - {hex(class_hierarchy_descriptor.base_addr)}.')
+                return True
+            else:
+                Utils.LogToFile(
+                    f'VerifyClassHierarchyDescriptor: FAILED to defined CHD at - {hex(class_hierarchy_descriptor.base_addr)}.')
+        return False
 
     def DefineVirtualFuncTable(self):
         # Define the vfTable of this class
@@ -149,18 +163,22 @@ class CompleteObjectLocator:
         else:
             return False
 
-    def get_mangled_class_name(self) -> str:
+    def get_mangled_class_name(self) -> Union[str, None]:
         Utils.LogToFile(f'CompleteObjectLocator: Extracting class name.')
         class_name_addr = self.pTypeDescriptor + self.name_string_offset_inside_typedescriptor
         class_name_string = self.bv.get_ascii_string_at(class_name_addr)
-        Utils.LogToFile(f'CompleteObjectLocator: Found Class name - {class_name_string.value}.')
-        return class_name_string.value
+        if class_name_string:
+            Utils.LogToFile(f'CompleteObjectLocator: Found Class name - {class_name_string.value}.')
+            return class_name_string.value
+        else:
+            Utils.LogToFile(f'CompleteObjectLocator: NO Class name found for COL- {hex(self.base_addr)}.')
+            return None
 
     def GetVtableAddr(self) -> int:
         if self.vTable:
             return self.vTable.base_addr
         else:
-            return list(self.bv.get_data_refs(self.base_addr))[0] + Config.PTR_SIZE_X64
+            return list(self.bv.get_data_refs(self.base_addr))[0] + self.pointer_size
 
     def GetVtableLength(self):
         return self.vTable.GetLength()
@@ -181,5 +199,7 @@ class CompleteObjectLocator:
                     if self.VerifyClassHierarchyDescriptor():
                         if self.DefineDataVarForCol():
                             if self.DefineVirtualFuncTable():
+                                Utils.LogToFile(f'VerifyCol: Successfully verified COL at {hex(self.base_addr)}')
                                 return True
+        Utils.LogToFile(f'VerifyCol: No COL found at {hex(self.base_addr)}')
         return False

@@ -14,12 +14,11 @@ class BaseClassDescriptor:
         self.base_addr: int = base_addr
 
         # Type descriptor of the base class.
-        self.pTypeDescriptor = self.bv.read_int(self.base_addr, 0x4) + \
-                               Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
+        self.pTypeDescriptor = self.GetTypeDescriptorAddress()
         # Number of direct bases of this base class.
-        self.numContainedBases: int = self.bv.read_int(self.base_addr + 0x4, 0x4)
+        self.numContainedBases: int = self.GetNumContainedBases()
         # vfTable offset (only if pdisp = -1)
-        self.pmd_mdisp: int = self.bv.read_int(self.base_addr + 0x8, 0x4)
+        self.pmd_mdisp: int = self.GetMdisp()
         # vbTable (virtual base class table) offset ( if = -1 then vfTable is at
         # displacement mdisp inside the class).
         # A vbTable is generated for multiple virtual inheritance.
@@ -27,29 +26,65 @@ class BaseClassDescriptor:
         # the base class needs to be determined.
         # A vbTable contains a displacement of each base class' vfTable which is effectively the
         # beginning of the base class within the derived class.
-        self.pmd_pdisp: int = self.bv.read_int(self.base_addr + 0xC, 0x4)
+        self.pmd_pdisp: int = self.GetPdisp()
         # Displacement of the base class vfTable pointer inside the vbTable
-        self.pmd_vdisp: int = self.bv.read_int(self.base_addr + 0x10, 0x4)
+        self.pmd_vdisp: int = self.GetVdisp()
         # ???
-        self.attributes: int = self.bv.read_int(self.base_addr + 0x14, 0x4)
+        self.attributes: int = self.GetAttributes()
         # RTTIClassHierarchyDescriptor of this base class
-        self.pClassDescriptor: int = self.bv.read_int(self.base_addr + 0x18, 0x4) + Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
+        self.pClassDescriptor: int = self.GetClassDescriptor()
 
         self.mangled_class_name = self.get_mangled_class_name()
         self.demangled_class_name = Utils.DemangleName(self.mangled_class_name)
-        if ClassContext.base_class_descriptors.get(self.base_addr):
-            self.verified = True
-        else:
-            if self.DefineDataVar():
-                self.verified = True
-                ClassContext.base_class_descriptors.update({self.base_addr: self.GetInstanceAsDict()})
-            else:
-                self.verified = False
 
-        if self.verified and self.DefineRecursiveChd():
-            Utils.LogToFile(f'BaseClassDescriptor: Defined - {self.__repr__()}')
-        else:
-            self.verified = False
+        self.verified = self.VerifyBaseClassDescriptor()
+
+    def VerifyBaseClassDescriptor(self) -> bool:
+        if self.IsInheritenceTypeSupported():
+            if ClassContext.base_class_descriptors.get(self.base_addr):
+                return True
+            else:
+                if self.DefineDataVar():
+                    ClassContext.base_class_descriptors.update({self.base_addr: self.GetInstanceAsDict()})
+                    if self.DefineRecursiveChd():
+                        Utils.LogToFile(f'BaseClassDescriptor: Defined - {self.__repr__()}')
+                        return True
+        return False
+
+    def GetTypeDescriptorAddress(self):
+        base_of_file = 0
+        if self.bv.arch.name == "x86_64":
+            base_of_file = Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
+        return self.bv.read_int(self.base_addr, 0x4) + base_of_file
+
+    def GetNumContainedBases(self):
+        return self.bv.read_int(self.base_addr + 0x4, 0x4)
+
+    def GetPdisp(self):
+        return self.bv.read_int(self.base_addr + 0xC, 0x4)
+
+    def GetVdisp(self):
+        return self.bv.read_int(self.base_addr + 0x10, 0x4)
+
+    def GetMdisp(self):
+        return self.bv.read_int(self.base_addr + 0x8, 0x4)
+
+    def GetAttributes(self):
+        return self.bv.read_int(self.base_addr + 0x14, 0x4)
+
+    def GetClassDescriptor(self):
+        base_of_file = 0
+        if self.bv.arch.name == "x86_64":
+            base_of_file = Utils.GetBaseOfFileContainingAddress(self.bv, self.base_addr)
+        return self.bv.read_int(self.base_addr + 0x18, 0x4) + base_of_file
+
+    def IsInheritenceTypeSupported(self):
+        # if the pDisp field is -1 then we are dealing with normal inheritence, otherwise
+        # we have multiple virtual inheritence which is not supported at the moment:
+        # TODO: Support multiple virtual inheritence
+        # For now we return True no matter what, in order to keep the processing of further base classes.
+        # return self.pmd_pdisp == -1
+        return True
 
     def __repr__(self):
         return f'BaseClassDescriptor {hex(self.base_addr)} \n' \
@@ -82,10 +117,8 @@ class BaseClassDescriptor:
             self.bv.define_user_data_var(self.pTypeDescriptor,
                                          self.bv.get_type_by_name(f'TypeDescriptor'),
                                          )
-            pass  # bn.log_info(f'BaseClassDescriptor: Defined BCD at {hex(self.base_addr)}')
             return True
         except Exception as e:
-            pass  # bn.log_error(f'BaseClassDescriptor: Failed to define BCD at {hex(self.base_addr)}')
             return False
 
     def DefineRecursiveChd(self) -> bool:
@@ -93,6 +126,8 @@ class BaseClassDescriptor:
         Recursively define the Class Hierarchy Descriptor pointed to by this base class.
         :return:
         """
+        Utils.LogToFile(f'DefineRecursiveChd: Attempt to recursively define CHD at {hex(self.pClassDescriptor)} '
+                        f'with mangled name {self.mangled_class_name}')
         class_hierarchy_descriptor = ClassHierarchyDescriptor.ClassHierarchyDescriptor(self.bv, self.pClassDescriptor,
                                                                                        self.mangled_class_name)
         if class_hierarchy_descriptor.verified:
@@ -105,8 +140,10 @@ class BaseClassDescriptor:
             return False
 
     def get_mangled_class_name(self) -> str:
-        pass  # bn.log_info(f'BaseClassDescriptor: Extracting class name.')
-
-        class_name_addr = self.pTypeDescriptor + Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X64
+        if self.bv.arch.name == "x86_64":
+            name_offset_in_type_descriptor = Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X64
+        else:
+            name_offset_in_type_descriptor = Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X32
+        class_name_addr = self.pTypeDescriptor + name_offset_in_type_descriptor
         class_name_string = self.bv.get_ascii_string_at(class_name_addr)
         return class_name_string.value
