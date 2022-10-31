@@ -11,6 +11,7 @@ from .Common import Utils
 from . import Config
 from .RttiInfomation import TypeCreation
 from .ClassDataStructureDetection.Constructors import DetectConstructor
+from .RttiInfomation.VirtualTableInference import VirtualFunctionTable
 
 
 def is_bv_valid_for_plugin(bv: bn.binaryview) -> bool:
@@ -21,6 +22,15 @@ def is_bv_valid_for_plugin(bv: bn.binaryview) -> bool:
         return False
 
 
+def GetUserInputs() -> bool:
+    choice = bn.interaction.ChoiceField("",
+                                        ["Add comment for function", "Change name of function",
+                                         "Do not detect constructors"])
+    bn.interaction.get_form_input([choice], "Constructor functions handling mode")
+    Config.CONSTRUCTOR_FUNCTION_HANDLING = choice.result
+    return True
+
+
 class InspectInBackground(bn.BackgroundTaskThread):
 
     def __init__(self, bv: bn.binaryview):
@@ -28,14 +38,15 @@ class InspectInBackground(bn.BackgroundTaskThread):
         self.bv = bv
 
     def run(self):
-        choice = bn.interaction.ChoiceField("",
-                                            ["Add comment for function", "Change name of function",
-                                             "Do not detect constructors"])
-        bn.interaction.get_form_input([choice], "Constructor functions handling mode")
-        if self.RTTI_inspection():
-            if choice.result != 2:
-                # choice = 2 : Do not detect constructors
-                DetectConstructor.detect(self.bv, choice.result)
+        if GetUserInputs():
+            self.RTTI_inspection()
+            self.DetectAndVerifyConstructor()
+
+    def DetectAndVerifyConstructor(self):
+        if Config.CONSTRUCTOR_FUNCTION_HANDLING != 2:
+            # Iterate over all found vfTables and detect their constructors
+            for base_addr, contained_functions in VirtualFunctionTable.global_vfTables.items():
+                DetectConstructor.DetectConstructorForVTable(self.bv, base_addr, contained_functions)
 
     def RTTI_inspection(self) -> bool:
         Utils.LogToFile(f'Logging filename: {Config.LOGFILE_FULL_PATH}')

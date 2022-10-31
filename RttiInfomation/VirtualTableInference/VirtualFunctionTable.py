@@ -1,6 +1,11 @@
 import binaryninja as bn
+
 from ...Common import Utils
 from typing import *
+
+# {vfTable_addr: [ContainedFunctions]}
+global_vfTables: Dict[int, List[int]] = dict()
+global_functions_contained_in_all_vfTables: List[int] = list()
 
 
 class VFTABLE:
@@ -11,16 +16,28 @@ class VFTABLE:
         self.vfTable_length: int = 0
         # Strip the "class " from the start of the demangled name.
         self.demangled_name: str = demangled_name[6:] if demangled_name.startswith("class ") else demangled_name
-        self.verified: bool = False
         self.contained_functions: List[int] = list()
         self.verified = self.VerifyVFT()
 
     def VerifyVFT(self) -> bool:
         data_refs_from_base_addr = list(self.bv.get_data_refs_from(self.base_addr))
+        if len(data_refs_from_base_addr) == 0:
+            # This is a situation that occurs due to a bug in binary ninja - if the data var at base_addr
+            # is defined as a symbol from a previously loaded PDB file then binja will not recognize any data refs.
+            # Since we are positive at this point that this location is a vTable (since we verified the COL for this
+            # class) then it is safe to change its type to 'void *' in order to "fix" the binja bug and allow it to
+            # recognize data refs.
+            vTable_data_var = self.bv.get_data_var_at(self.base_addr)
+            vTable_data_var.type = self.bv.parse_type_string("void*")[0]
+            # Now we should see data refs from this address
+            data_refs_from_base_addr = list(self.bv.get_data_refs_from(self.base_addr))
+
         if len(data_refs_from_base_addr) > 0:
             if self.bv.get_function_at(data_refs_from_base_addr[0]):
                 if self.DefineVFT():
-                    Utils.LogToFile(f'VFTABLE: verified table at address {self.base_addr}')
+                    # Update this vfTable in the global table, this will be used later for locating constructor funcs
+                    global_vfTables.update({self.base_addr: self.contained_functions})
+                    Utils.LogToFile(f'VFTABLE: verified table at address {hex(self.base_addr)}')
                     return True
         return False
 

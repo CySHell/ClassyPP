@@ -147,7 +147,7 @@ class CompleteObjectLocator:
                     f'VerifyClassHierarchyDescriptor: FAILED to defined CHD at - {hex(class_hierarchy_descriptor.base_addr)}.')
         return False
 
-    def DefineVirtualFuncTable(self):
+    def DefineVirtualFuncTable(self) -> bool:
         # Define the vfTable of this class
         vfTable_address = self.GetVtableAddr()
         Utils.LogToFile(f'CompleteObjectLocator: Processing vfTable at: {vfTable_address}')

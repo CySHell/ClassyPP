@@ -29,11 +29,19 @@ PTR_SIZE_X32 = INT32_T
 
 
 ######################################################
+#   User choices
+######################################################
+# 0 - Add comment for constructor function
+# 1 - Change name of constructor function
+# 2 - Do not detect constructors
+CONSTRUCTOR_FUNCTION_HANDLING = 2
+
+
+######################################################
 #   Logging
 ######################################################
 ENABLE_LOGGING = False
 ENABLE_DEBUG_LOGGING = False
-
 COMPLETE_OBJECT_LOCATOR_RECORD_FILE = os.path.expandvars(
     f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\ColRecord.txt')
 CLASS_HIERARCHY_DESCRIPTORS_RECORD_FILE = os.path.expandvars(
