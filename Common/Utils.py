@@ -30,7 +30,13 @@ def DemangleName(mangled_name: str) -> str:
         return demangled_name.split(" `RTTI")[0]
 
 
-log_file = open(Config.LOGFILE_FULL_PATH, 'w')
+try:
+    log_file = open(Config.LOGFILE_FULL_PATH, 'w')
+except FileNotFoundError:
+    log_file = open(Config.LOGFILE_FULL_PATH, 'w+')
+    if log_file:
+        log_file.close()
+    log_file = open(Config.LOGFILE_FULL_PATH, 'w')
 
 
 def LogToFile(log_str: str):
