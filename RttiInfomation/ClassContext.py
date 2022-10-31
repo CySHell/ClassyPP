@@ -2,7 +2,7 @@ import binaryninja as bn
 from typing import *
 import json
 from .CompleteObjectLocator import CompleteObjectLocator
-from . import ClassHierarchyDeduction
+from .ClassHierarchyInference import ClassHierarchyDeduction
 from ..Common import Utils
 from .. import Config
 from .ClassMemoryLayout import ClassStructCreation

@@ -2,7 +2,9 @@ import binaryninja as bn
 from typing import List
 
 
-def detect(bv: bn.binaryview):
+def detect(bv: bn.binaryview, choice: int):
+    # choice = 0 : Only add comment to suspected constructor
+    # choice = 1 : Change the name of the constructor function
     for func in bv.functions:
         try:
             for instr in func.hlil.instructions:
@@ -28,14 +30,32 @@ def detect(bv: bn.binaryview):
                                                 # Check if this is a function pointer
                                                 if bv.get_function_at(data_refs[0]):
                                                     constructor_addr: List[
-                                                        bn.function.Function] = bv.get_functions_containing(instr.address)
+                                                        bn.function.Function] = bv.get_functions_containing(
+                                                        instr.address)
                                                     if len(constructor_addr) == 1:
+                                                        class_name: str = bv.get_data_var_at(pointer).name
                                                         print(
-                                                            f'Suspected constructor at - {hex(constructor_addr[0].start)},'
-                                                            f' vfTable address is - {hex(pointer)}')
+                                                            f'Suspected constructor at - {hex(constructor_addr[0].start)},\n '
+                                                            f'Class name: {class_name} \n'
+                                                            f' vfTable address is - {hex(pointer)} \n\n')
+                                                        if choice == 0:
+                                                            AddComment(bv, constructor_addr[0].start, pointer,
+                                                                       class_name)
+                                                        elif choice == 1:
+                                                            ChangeFuncName(bv, constructor_addr[0].start, pointer,
+                                                                           class_name)
                                     else:
                                         # print(f'Error in instruction {instr}')
                                         pass
         except Exception as e:
             print(f"Constructor Detection encountered an error in {func.start}! Exception: {e}")
             pass
+
+
+def AddComment(bv: bn.binaryview, constructor_addr: int, vtable_addr: int, class_name: str):
+    bv.set_comment_at(constructor_addr, f"Suspected constructor function for class {class_name}, virtual table"
+                                        f"at {hex(vtable_addr)}")
+
+
+def ChangeFuncName(bv: bn.binaryview, constructor_addr: int, vtable_addr: int, class_name: str):
+    bv.get_function_at(constructor_addr).name = f"{class_name}::Constructor"

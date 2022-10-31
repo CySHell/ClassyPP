@@ -28,21 +28,29 @@ class InspectInBackground(bn.BackgroundTaskThread):
         self.bv = bv
 
     def run(self):
-        self.RTTI_inspection()
-        DetectConstructor.detect(self.bv)
+        choice = bn.interaction.ChoiceField("",
+                                            ["Add comment for function", "Change name of function",
+                                             "Do not detect constructors"])
+        bn.interaction.get_form_input([choice], "Constructor functions handling mode")
+        if self.RTTI_inspection():
+            if choice.result != 2:
+                # choice = 2 : Do not detect constructors
+                DetectConstructor.detect(self.bv, choice.result)
 
-    def RTTI_inspection(self):
+    def RTTI_inspection(self) -> bool:
         Utils.LogToFile(f'Logging filename: {Config.LOGFILE_FULL_PATH}')
         Utils.LogToFile(f'inspect: Starting Scan.')
         if TypeCreation.CreateTypes(self.bv):
             GCM: GlobalClassContextManager = GlobalClassContextManager(self.bv)
             if GCM.DefineRTTI():
                 Utils.LogToFile(f'ClassyPP: Successfully created types.')
-                print(f'Done analyzing.')
+                print(f'ClassyPP: Successfully defined RTTI Information.')
+                return True
             else:
                 Utils.LogToFile(f'ClassyPP: Failed to create RTTI classes.')
         else:
             Utils.LogToFile(f'ClassyPP: Failed to create types.')
+        return False
 
 
 def inspect(bv: bn.binaryview):

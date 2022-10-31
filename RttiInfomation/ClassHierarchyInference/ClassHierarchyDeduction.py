@@ -2,9 +2,9 @@ import itertools
 
 import networkx as nx
 from networkx import DiGraph
-from . import ClassContext
-from ..Common import Utils
-from .. import Config
+from ...RttiInfomation import ClassContext
+from ...Common import Utils
+from ... import Config
 import binaryninja as bn
 from typing import *
 

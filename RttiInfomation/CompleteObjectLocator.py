@@ -1,6 +1,6 @@
 import binaryninja as bn
 from .ClassHierarchyDescriptor import ClassHierarchyDescriptor
-from . import VirtualFunctionTable
+from .VirtualTableInference import VirtualFunctionTable
 from ..Common import Utils
 from .. import Config
 from typing import *
@@ -24,7 +24,6 @@ class CompleteObjectLocator:
         Utils.LogToFile(f'CompleteObjectLocator: Processing COL at address {hex(self.base_addr)}')
 
         # Fix up information for 64 \ 32 bit
-        self.relative = True
         self.pTypeDescriptor = self.GetTypeDescriptorAddress()
         self.pClassDescriptor = self.GetClassDescriptorAddress()
         self.pSelf = self.GetSelfPointer()

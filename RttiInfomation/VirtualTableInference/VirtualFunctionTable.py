@@ -1,5 +1,5 @@
 import binaryninja as bn
-from ..Common import Utils
+from ...Common import Utils
 from typing import *
 
 
@@ -9,19 +9,19 @@ class VFTABLE:
         self.bv: bn.binaryview = bv
         self.base_addr: int = base_addr
         self.vfTable_length: int = 0
-        self.demangled_name: str = demangled_name
+        # Strip the "class " from the start of the demangled name.
+        self.demangled_name: str = demangled_name[6:] if demangled_name.startswith("class ") else demangled_name
         self.verified: bool = False
         self.contained_functions: List[int] = list()
-        if self.VerifyVFT():
-            if self.DefineVFT():
-                Utils.LogToFile(f'VFTABLE: verified table at address {self.base_addr}')
-                self.verified = True
+        self.verified = self.VerifyVFT()
 
     def VerifyVFT(self) -> bool:
         data_refs_from_base_addr = list(self.bv.get_data_refs_from(self.base_addr))
         if len(data_refs_from_base_addr) > 0:
             if self.bv.get_function_at(data_refs_from_base_addr[0]):
-                return True
+                if self.DefineVFT():
+                    Utils.LogToFile(f'VFTABLE: verified table at address {self.base_addr}')
+                    return True
         return False
 
     def DefineVFT(self) -> bool:
