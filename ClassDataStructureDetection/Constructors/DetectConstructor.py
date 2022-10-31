@@ -38,7 +38,6 @@ def GetPotentialConstructors(bv: bn.binaryview, vfTable_addr: int) -> \
     for code_ref in bv.get_code_refs(vfTable_addr):
         func_containing_code_ref = code_ref.function
         if func_containing_code_ref.start not in VirtualFunctionTable.global_functions_contained_in_all_vfTables:
-            print(f"table: {hex(vfTable_addr)}, function containing code ref: {hex(func_containing_code_ref.start)}")
             potential_constructors.append(func_containing_code_ref)
     return potential_constructors
 
