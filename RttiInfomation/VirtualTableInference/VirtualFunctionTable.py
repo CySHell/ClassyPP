@@ -2,6 +2,7 @@ import binaryninja as bn
 
 from ...Common import Utils
 from typing import *
+import pysnooper
 
 # {vfTable_addr: [ContainedFunctions]}
 global_vfTables: Dict[int, List[int]] = dict()
@@ -61,14 +62,38 @@ class VFTABLE:
         else:
             return False
 
-    def IsPointerToFunction(self, pointer_addr: int):
+    def GetPointer(self, pointer_addr: int) -> Optional[bn.DataVariable]:
+        # Sometimes binja parses PDB information incorrectly, and instead of a pointer to a vTable
+        # it just defines the struct that the PDB says defines the vTable.
+        # If this happens - we dont change the PDB struct, we just say this is a pointer to the PDB struct.
         pointer: bn.DataVariable = self.bv.get_data_var_at(pointer_addr)
+        if type(pointer) != bn.types.PointerType:
+            if not pointer:
+                pointer_name = " "
+            else:
+                pointer_name = pointer.name
+            try:
+                Utils.LogToFile(f"VirtualFunction_GetPointer: Overriding original type for Vtable -\n"
+                                f"pointer_addr: {hex(pointer_addr)}\n"
+                                f"attempt pointer type: {bn.Type.pointer(self.bv.arch, pointer.type)}\n"
+                                f"pointer name: {pointer.name}")
+                self.bv.define_user_data_var(pointer_addr,
+                                             bn.Type.pointer(self.bv.arch, self.bv.parse_type_string("void")[0]),
+                                             pointer_name)
+                return self.bv.get_data_var_at(pointer_addr)
+            except Exception as e:
+                return None
+        return pointer
+
+    def IsPointerToFunction(self, pointer_addr: int) -> bool:
         try:
-            if self.bv.get_sections_at(pointer.value)[0].semantics is bn.SectionSemantics.ReadOnlyCodeSectionSemantics:
-                if not self.bv.get_function_at(pointer.value):
-                    self.bv.add_function(pointer.value)
-                self.contained_functions.append(pointer.value)
-                return True
+            if pointer := self.GetPointer(pointer_addr):
+                if self.bv.get_sections_at(pointer.value)[0].semantics is \
+                        bn.SectionSemantics.ReadOnlyCodeSectionSemantics:
+                    if not self.bv.get_function_at(pointer.value):
+                        self.bv.add_function(pointer.value)
+                    self.contained_functions.append(pointer.value)
+                    return True
         except Exception as e:
             pass
 

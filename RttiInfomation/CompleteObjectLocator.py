@@ -4,6 +4,7 @@ from .VirtualTableInference import VirtualFunctionTable
 from ..Common import Utils
 from .. import Config
 from typing import *
+import pysnooper
 
 
 class CompleteObjectLocator:

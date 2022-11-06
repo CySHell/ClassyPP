@@ -1,1 +1,2 @@
-networkx
+networkx~=2.8.2
+PySnooper~=1.1.1
