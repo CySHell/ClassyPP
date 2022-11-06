@@ -68,7 +68,7 @@ def IsDestructor(bv: bn.binaryview, potential_destructor: bn.function.Function) 
 
 
 def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Function, found_constructors: int) -> bool:
-    # The heuristics used here will locate both the constructors and desctructors.
+    # The heuristics used here will locate both the constructors and destructors.
     # It is not easy to automatically distinguish between the two.
     func_type = "Constructor"
     try:
