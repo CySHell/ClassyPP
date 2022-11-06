@@ -44,12 +44,20 @@ classes.
 
 ![vfTable - After](https://user-images.githubusercontent.com/34336222/171192938-75f4397e-5013-477d-b761-be4a06f509ff.png)
 
-**Detect and Define Constructor functions**
 
-Base on information obtained in the preceeding steps, it is possible to locate suspected constructor function for the 
+
+
+
+**Detect and Define Constructor\Destructor functions**
+
+Base on information obtained in the preceeding steps, it is possible to locate suspected constructor and Destructor functions for the 
 various detected classes.
-The plugin will either annotate the suspected constructor with a comment or change the name of the function to reflect
-the high probability of it being a constructor.
+The plugin will either annotate the suspected constructor\destructor with a comment or change the name of the function to reflect
+the detection.
+
+
+
+
 
 
 **Define class types for known Classes**
