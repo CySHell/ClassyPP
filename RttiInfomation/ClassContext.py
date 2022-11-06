@@ -109,13 +109,12 @@ class GlobalClassContextManager:
                 current_address = sect.start
                 while current_address < sect.end - self.rtti_complete_object_locator_size:
                     if Col := self.GetCompleteObjectLocator(current_address):
-                        with pysnooper.snoop():
-                            Utils.LogToFile(f'DefineRTTI: Defined {Col.__repr__()} \n')
-                            print(f"Defined Class: {Col.mangled_class_name}")
-                            if Config.ENABLE_DEBUG_LOGGING:
-                                self.DebugPrintCol(Col, current_address)
+                        Utils.LogToFile(f'DefineRTTI: Defined {Col.__repr__()} \n')
+                        print(f"Defined Class: {Utils.DemangleName(Col.mangled_class_name)}")
+                        if Config.ENABLE_DEBUG_LOGGING:
+                            self.DebugPrintCol(Col, current_address)
 
-                            current_address += self.rtti_complete_object_locator_size
+                        current_address += self.rtti_complete_object_locator_size
                     else:
                         # A Col will be 4 bytes aligned
                         current_address += 4

@@ -2,6 +2,7 @@ import binaryninja as bn
 from typing import List
 from ... import Config
 from ...RttiInfomation.VirtualTableInference import VirtualFunctionTable
+import pysnooper
 
 
 def GetVirtualTableAssignmentInstruction(func: bn.function.Function):
@@ -15,9 +16,11 @@ def GetVirtualTableAssignmentInstruction(func: bn.function.Function):
                 if func_params[0] == instr.vars[0]:
                     # <HighLevelILOperation.HLIL_CONST_PTR: 27>, <HighLevelILOperation.HLIL_CONST: 26>
                     if instr.operands[1].operation == 27 or instr.operands[1].operation == 26:
-                        # <HighLevelILOperation.HLIL_DEREF: 23> De-referencing the pointer, meaning if this
+                        # <HighLevelILOperation.HLIL_DEREF: 23>
+                        # <HighLevelILOperation.HLIL_DEREF_FIELD: 24>
+                        # De-referencing the pointer, meaning if this
                         # pointer is to a struct, this is de-referencing offset 0x0.
-                        if instr.operands[0].operation == 23:
+                        if instr.operands[0].operation == 23 or instr.operands[0].operation == 24:
                             if type(instr.operands[0].operands[0]) == bn.highlevelil.HighLevelILVar:
                                 current_candidate_instr = instr
 
@@ -47,11 +50,27 @@ def DetectConstructorForVTable(bv: bn.binaryview, vfTable_addr: int, vfTable_con
     potential_constructors: List[bn.function.Function] = GetPotentialConstructors(bv, vfTable_addr)
     for potential_constructor in potential_constructors:
         if VerifyConstructor(bv, potential_constructor, found_constructors):
+            print(f'ClassyPP: Found constructor - {potential_constructor.name}')
             found_constructors += 1
     return found_constructors != 0
 
 
-def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Function, found_constructurs: int) -> bool:
+def IsDestructor(bv: bn.binaryview, potential_destructor: bn.function.Function) -> bool:
+    # The heuristic for determining a destructor is very primitive - if it contains the delete or ~ operator in
+    # one of the function it calls then we determine its a destructor.
+    # TODO: Find a better heuristic for finding destructors.
+    destructor_name_hints: List[str] = ["delete", "Delete", "~", "destroy", "Destroy"]
+    for callee in potential_destructor.callees:
+        for destructor_name_hint in destructor_name_hints:
+            if destructor_name_hint in callee.name:
+                return True
+    return False
+
+
+def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Function, found_constructors: int) -> bool:
+    # The heuristics used here will locate both the constructors and desctructors.
+    # It is not easy to automatically distinguish between the two.
+    func_type = "Constructor"
     try:
         if instr := GetVirtualTableAssignmentInstruction(potential_constructor):
             pointer: int = instr.operands[1].operands[0]
@@ -67,16 +86,14 @@ def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Func
                         if class_name.endswith("_vfTable"):
                             # Remove the _vfTable tag from the name
                             class_name = class_name[:-8]
-                        print(
-                            f'Suspected constructor at - {potential_constructor.start},\n '
-                            f'Class name: {class_name} \n'
-                            f' vfTable address is - {hex(pointer)} \n\n')
+                        if IsDestructor(bv, potential_constructor):
+                            func_type = "Destructor"
                         if Config.CONSTRUCTOR_FUNCTION_HANDLING == 0:
                             AddComment(bv, potential_constructor.start, pointer,
-                                       class_name)
+                                       class_name, func_type)
                         elif Config.CONSTRUCTOR_FUNCTION_HANDLING == 1:
-                            ChangeFuncName(bv, potential_constructor.start, found_constructurs,
-                                           class_name)
+                            ChangeFuncName(bv, potential_constructor.start, found_constructors,
+                                           class_name, func_type)
                         else:
                             # invalid choice
                             return False
@@ -89,10 +106,11 @@ def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Func
         return False
 
 
-def AddComment(bv: bn.binaryview, constructor_addr: int, vtable_addr: int, class_name: str):
-    bv.set_comment_at(constructor_addr, f"Suspected constructor function for class {class_name}, virtual table"
+def AddComment(bv: bn.binaryview, constructor_addr: int, vtable_addr: int, class_name: str, func_type: str):
+    bv.set_comment_at(constructor_addr, f"Suspected {func_type} function for class {class_name}, virtual table"
                                         f"at {hex(vtable_addr)}")
 
 
-def ChangeFuncName(bv: bn.binaryview, constructor_addr: int, found_constructurs: int, class_name: str):
-    bv.get_function_at(constructor_addr).name = f"{class_name}::Constructor_{found_constructurs}"
+def ChangeFuncName(bv: bn.binaryview, constructor_addr: int, found_constructors: int, class_name: str,
+                   func_type: str):
+    bv.get_function_at(constructor_addr).name = f"{class_name}::{func_type}_{found_constructors}"

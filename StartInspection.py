@@ -48,8 +48,7 @@ class InspectInBackground(bn.BackgroundTaskThread):
             print(f'ClassyPP: Constructor Detection process started...')
             for base_addr, contained_functions in VirtualFunctionTable.global_vfTables.items():
                 if DetectConstructor.DetectConstructorForVTable(self.bv, base_addr, contained_functions):
-                    print(f'ClassyPP: Found constructor - {self.bv.get_function_at(base_addr).name}')
-
+                    pass
 
     def RTTI_inspection(self) -> bool:
         Utils.LogToFile(f'Logging filename: {Config.LOGFILE_FULL_PATH}')
