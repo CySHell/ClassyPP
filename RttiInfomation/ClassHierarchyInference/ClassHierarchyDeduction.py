@@ -60,11 +60,21 @@ def GetLowestCommonAncestor(common_classes: List[int], class_hierarchy_graph: Di
         return 0
 
 
+def FuncNameNotDefinedByPDB(func: bn.Function) -> bool:
+    # If a PDB database has already defined this function name then we do not want to override
+    # that name since it is a more accurate description of the function.
+    # instead, we just add a comment in the function to indicate it is part of a vTable.
+    return func.name.startswith("sub_") or "::" not in func.name
+
+
 def RenameFunction(bv: bn.binaryview, vtable_function: int, lca: int, function_index: int) -> bool:
     class_name: str = ClassContext.base_class_descriptors[lca]['class_name']
     try:
         func: bn.Function = bv.get_function_at(vtable_function)
-        func.name = f'{class_name}_method{function_index}'
+        if FuncNameNotDefinedByPDB(func):
+            func.name = f'{class_name}_method{function_index}'
+        else:
+            func.set_comment_at(func.start, f'{class_name}_method{function_index}')
         return True
     except:
         return False

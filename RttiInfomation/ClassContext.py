@@ -108,7 +108,7 @@ class GlobalClassContextManager:
                 while current_address < sect.end - self.rtti_complete_object_locator_size:
                     if Col := self.GetCompleteObjectLocator(current_address):
                         Utils.LogToFile(f'DefineRTTI: Defined {Col.__repr__()} \n')
-
+                        print(f"Defined Class: {Col.mangled_class_name}")
                         if Config.ENABLE_DEBUG_LOGGING:
                             self.DebugPrintCol(Col, current_address)
 
