@@ -23,12 +23,20 @@ def is_bv_valid_for_plugin(bv: bn.binaryview) -> bool:
 
 
 def GetUserInputs() -> bool:
+    if Config.ENABLE_LOGGING or Config.ENABLE_DEBUG_LOGGING:
+        Utils.logging_file = Utils.GetLogfileHandle()
+
     choice = bn.interaction.ChoiceField("",
                                         ["Add comment for function", "Change name of function",
                                          "Do not detect constructors"])
     bn.interaction.get_form_input([choice], "Constructor functions handling mode")
     Config.CONSTRUCTOR_FUNCTION_HANDLING = choice.result
     return True
+
+
+def CleanupPlugin():
+    if Config.ENABLE_LOGGING or Config.ENABLE_DEBUG_LOGGING:
+        Utils.logging_file.close()
 
 
 class InspectInBackground(bn.BackgroundTaskThread):
@@ -41,6 +49,7 @@ class InspectInBackground(bn.BackgroundTaskThread):
         if GetUserInputs():
             self.RTTI_inspection()
             self.DetectAndVerifyConstructor()
+        CleanupPlugin()
 
     def DetectAndVerifyConstructor(self):
         if Config.CONSTRUCTOR_FUNCTION_HANDLING != 2:
@@ -51,7 +60,6 @@ class InspectInBackground(bn.BackgroundTaskThread):
                     pass
 
     def RTTI_inspection(self) -> bool:
-        Utils.LogToFile(f'Logging filename: {Config.LOGFILE_FULL_PATH}')
         Utils.LogToFile(f'inspect: Starting Scan.')
         if TypeCreation.CreateTypes(self.bv):
             GCM: GlobalClassContextManager = GlobalClassContextManager(self.bv)

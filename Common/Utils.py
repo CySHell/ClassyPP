@@ -1,12 +1,10 @@
-import json
 import subprocess
-
-import binaryninja.binaryview
-
+from os.path import exists
+import binaryninja as bn
 from .. import Config
 
 
-def GetBaseOfFileContainingAddress(bv: binaryninja.binaryview.BinaryView, addr: int) -> int:
+def GetBaseOfFileContainingAddress(bv: bn.binaryninja.binaryview.BinaryView, addr: int) -> int:
     # When loading other files, such as dlls, into the memory space of the current bv we need
     # to determine the base of the file in order to calculate relative addresses.
     section_name: str = bv.get_sections_at(addr)[0].name
@@ -30,16 +28,28 @@ def DemangleName(mangled_name: str) -> str:
         return demangled_name.split(" `RTTI")[0]
 
 
-if Config.ENABLE_LOGGING or Config.ENABLE_DEBUG_LOGGING:
+############################################################################################
+#                   LOGGING
+############################################################################################
+def GetLogfileHandle():
+    if Config.LOG_FILES_DETERMINED_BY_USER:
+        LoggingDirectory: str = bn.interaction.get_directory_name_input(
+            f"Please select a directory to store the log files")
+    else:
+        LoggingDirectory: str = Config.LOGFILE_FULL_PATH
+
+    log_file_path = f"{LoggingDirectory}\\log_debug.txt"
     try:
-        log_file = open(Config.LOGFILE_FULL_PATH, 'w')
-    except FileNotFoundError:
-        log_file = open(Config.LOGFILE_FULL_PATH, 'w+')
-        if log_file:
-            log_file.close()
-        log_file = open(Config.LOGFILE_FULL_PATH, 'w')
+        if exists(LoggingDirectory):
+            log_file = open(log_file_path, 'w')
+        else:
+            log_file = open(log_file_path, 'x')
+    except Exception as e:
+        print(f"Can't open logfile {log_file_path} for writing -\n {e}")
+        return None
+    return log_file
 
 
 def LogToFile(log_str: str):
     if Config.ENABLE_LOGGING or Config.ENABLE_DEBUG_LOGGING:
-        log_file.write(f'\n {log_str} \n')
+        logging_file.write(f'\n {log_str} \n')

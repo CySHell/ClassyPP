@@ -8,7 +8,6 @@ from .. import Config
 from .ClassMemoryLayout import ClassStructCreation
 import pysnooper
 
-
 ###############################################################################################
 #                GLOBAL STRUCTS
 #
@@ -35,13 +34,17 @@ def UpdateCompleteObjectLocatorsList(Col: CompleteObjectLocator, current_address
 
 
 def RecordAllInformationToFile():
-    Utils.LogToFile(f'Recording to file {Config.BASE_CLASS_DESCRIPTORS_RECORD_FILE}')
-    with open(Config.COMPLETE_OBJECT_LOCATOR_RECORD_FILE, 'w') as col_file:
-        col_file.write(json.dumps(complete_object_locators, indent=4))
-    with open(Config.CLASS_HIERARCHY_DESCRIPTORS_RECORD_FILE, 'w') as chd_file:
-        chd_file.write(json.dumps(class_hierarchy_descriptors, indent=4))
-    with open(Config.BASE_CLASS_DESCRIPTORS_RECORD_FILE, 'w') as bcd_file:
-        bcd_file.write(json.dumps(base_class_descriptors, indent=4))
+    try:
+        Utils.LogToFile(f'Recording to file {Config.BASE_CLASS_DESCRIPTORS_RECORD_FILE}')
+        with open(Config.COMPLETE_OBJECT_LOCATOR_RECORD_FILE, 'w') as col_file:
+            col_file.write(json.dumps(complete_object_locators, indent=4))
+        with open(Config.CLASS_HIERARCHY_DESCRIPTORS_RECORD_FILE, 'w') as chd_file:
+            chd_file.write(json.dumps(class_hierarchy_descriptors, indent=4))
+        with open(Config.BASE_CLASS_DESCRIPTORS_RECORD_FILE, 'w') as bcd_file:
+            bcd_file.write(json.dumps(base_class_descriptors, indent=4))
+    except Exception:
+        # TODO: Get the logging directory path from the Utils module and log there
+        pass
 
 
 def IsSectionCompatibleToRTTI(section: bn.binaryview.Section) -> bn.binaryview.SectionSemantics:

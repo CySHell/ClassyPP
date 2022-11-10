@@ -40,8 +40,12 @@ CONSTRUCTOR_FUNCTION_HANDLING = 2
 ######################################################
 #   Logging
 ######################################################
-ENABLE_LOGGING = False
-ENABLE_DEBUG_LOGGING = False
+ENABLE_LOGGING = True
+ENABLE_DEBUG_LOGGING = True
+
+# If set to True the user will get a prompt to choose the logging directory
+LOG_FILES_DETERMINED_BY_USER = True
+
 COMPLETE_OBJECT_LOCATOR_RECORD_FILE = os.path.expandvars(
     f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\ColRecord.txt')
 CLASS_HIERARCHY_DESCRIPTORS_RECORD_FILE = os.path.expandvars(
