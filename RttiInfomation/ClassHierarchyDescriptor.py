@@ -7,20 +7,21 @@ from ..Common import Utils
 class ClassHierarchyDescriptor:
 
     def __init__(self, bv: bn.binaryview, base_addr: int, mangled_class_name: str):
+        Utils.LogToFile(f'Attempt to define {mangled_class_name} CHD at base_addr {base_addr}')
         self.base_class_array = None
         self.bv: bn.binaryview = bv
         self.base_addr: int = base_addr
         self.mangled_class_name: str = mangled_class_name
         self.demangled_class_name: str = Utils.DemangleName(self.mangled_class_name)
         # Always 0 ?
-        self.signature: int = self.bv.read_int(base_addr, 0x4)
+        self.signature: int = self.bv.read_int(self.base_addr, 0x4)
         # attributes = 0 - normal inheritance
         # attributes = 1 - multiple inheritance
         # attributes = 2 - virtual inheritance
         # attributes = 3 - multiple and virtual inheritance
-        self.attributes: int = self.bv.read_int(base_addr + 0x4, 0x4)
+        self.attributes: int = self.bv.read_int(self.base_addr + 0x4, 0x4)
         # Number of base classes. This count includes the class itself.
-        self.numBaseClasses: int = self.bv.read_int(base_addr + 0x8, 0x4)
+        self.numBaseClasses: int = self.bv.read_int(self.base_addr + 0x8, 0x4)
 
         self.pBaseClassArray: int = self.GetBaseClassArrayAddress()
 

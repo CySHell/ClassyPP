@@ -32,9 +32,12 @@ class CompleteObjectLocator:
         self.pointer_size = self.GetPointerSize()
 
         # Verify All fields and pointers match up to a real Complete Object Locator
-        self.verified: bool = False
-
-        self.verified = self.VerifyCol()
+        try:
+            self.verified = self.VerifyCol()
+        except Exception as e:
+            Utils.LogToFile(f"Failed to define COL at {self.base_addr}, \nException: "
+                            f"{e}\nCOL object:\n{self.__repr__()}")
+            self.verified: bool = False
 
     def GetPointerSize(self):
         if self.bv.arch.name == "x86":
