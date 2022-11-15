@@ -4,7 +4,6 @@ from .VirtualTableInference import VirtualFunctionTable
 from ..Common import Utils
 from .. import Config
 from typing import *
-import pysnooper
 
 
 class CompleteObjectLocator:
@@ -97,7 +96,7 @@ class CompleteObjectLocator:
 
     def GetChdAddr(self) -> int:
         """
-        Get the address of the Class Hierarchy Desctriptor pointed to by this Col
+        Get the address of the Class Hierarchy Descriptor pointed to by this Col
         :return: address of CHD
         """
         return self.class_hierarchy_descriptor_address
@@ -144,11 +143,13 @@ class CompleteObjectLocator:
             if class_hierarchy_descriptor.verified:
                 self.class_hierarchy_descriptor_address = class_hierarchy_descriptor.base_addr
                 Utils.LogToFile(
-                    f'VerifyClassHierarchyDescriptor: Succesfully defined CHD at - {hex(class_hierarchy_descriptor.base_addr)}.')
+                    f'VerifyClassHierarchyDescriptor: Successfully defined CHD at - '
+                    f'{hex(class_hierarchy_descriptor.base_addr)}.')
                 return True
             else:
                 Utils.LogToFile(
-                    f'VerifyClassHierarchyDescriptor: FAILED to defined CHD at - {hex(class_hierarchy_descriptor.base_addr)}.')
+                    f'VerifyClassHierarchyDescriptor: FAILED to defined CHD at - '
+                    f'{hex(class_hierarchy_descriptor.base_addr)}.')
         return False
 
     def DefineVirtualFuncTable(self) -> bool:
@@ -192,7 +193,7 @@ class CompleteObjectLocator:
     def VerifyCol(self) -> bool:
         """
         Verify this is really a Complete Object Locator.
-        :return: Verification Succeed \ Fail
+        :return: Verification Succeed / Fail
         """
         Utils.LogToFile(f'VerifyCol: Verifying {self.__repr__()}')
 

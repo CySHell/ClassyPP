@@ -48,11 +48,14 @@ class ClassHierarchyDescriptor:
             return False
 
     def VerifyChdAttributes(self) -> bool:
+        # attributes is a bitfield, with the following possible values defined in rttidata.h:
         # attributes = 0 - normal inheritance
         # attributes = 1 - multiple inheritance
         # attributes = 2 - virtual inheritance
         # attributes = 3 - multiple and virtual inheritance
-        if self.attributes == 0x0 or self.attributes == 0x1:
+        # attributes = 5 - Ambiguous, this option seems to be fine for our purposes
+        # TODO: Check what attribute = 5 actually means
+        if self.attributes == 0x0 or self.attributes == 0x1 or self.attributes == 0x5:
             # TODO: Add a better verification system
             return True
         elif self.attributes == 0x2 or self.attributes == 0x3:

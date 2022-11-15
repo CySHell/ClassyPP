@@ -40,8 +40,8 @@ CONSTRUCTOR_FUNCTION_HANDLING = 2
 ######################################################
 #   Logging
 ######################################################
-ENABLE_LOGGING = True
-ENABLE_DEBUG_LOGGING = True
+ENABLE_LOGGING = False
+ENABLE_DEBUG_LOGGING = False
 
 # If set to True the user will get a prompt to choose the logging directory
 LOG_FILES_DETERMINED_BY_USER = True

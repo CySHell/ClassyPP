@@ -79,9 +79,9 @@ class BaseClassDescriptor:
         return self.bv.read_int(self.base_addr + 0x18, 0x4) + base_of_file
 
     def IsInheritenceTypeSupported(self):
-        # if the pDisp field is -1 then we are dealing with normal inheritence, otherwise
-        # we have multiple virtual inheritence which is not supported at the moment:
-        # TODO: Support multiple virtual inheritence
+        # if the pDisp field is -1 then we are dealing with normal inheritance, otherwise
+        # we have multiple virtual inheritance which is not supported at the moment:
+        # TODO: Support multiple virtual inheritance
         # For now we return True no matter what, in order to keep the processing of further base classes.
         # return self.pmd_pdisp == -1
         return True
@@ -119,6 +119,7 @@ class BaseClassDescriptor:
                                          )
             return True
         except Exception as e:
+            Utils.LogToFile(f'BaseClassDescriptor: Exception while trying to define data var at {hex(self.base_addr)}')
             return False
 
     def DefineRecursiveChd(self) -> bool:
