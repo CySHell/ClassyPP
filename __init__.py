@@ -1,11 +1,11 @@
 """
-from .RttiInfomation import TypeCreation
-from .RttiInfomation import BaseClassDescriptor, ClassContext, \
+from .RttiInformation import TypeCreation
+from .RttiInformation import BaseClassDescriptor, ClassContext, \
     ClassHierarchyDescriptor, CompleteObjectLocator, TypeDescriptor, \
     BaseClassArray, VirtualFunctionTable, ClassHierarchyDeduction
 from .Common import Utils
 from . import Config
-from .RttiInfomation.ClassMemoryLayout import ClassStructCreation, LayoutParser, LayoutLoader
+from .RttiInformation.ClassMemoryLayout import ClassStructCreation, LayoutParser, LayoutLoader
 import importlib
 
 importlib.reload(StartInspection)

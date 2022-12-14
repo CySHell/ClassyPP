@@ -1,17 +1,11 @@
-"""
-import ClassyPP
-import importlib
-importlib.reload(ClassyPP);
-ClassyPP.StartInspection.inspect(bv)
-"""
-
+import pprint
 import binaryninja as bn
-from .RttiInfomation.ClassContext import GlobalClassContextManager
+from .RttiInformation.ClassContext import GlobalClassContextManager
 from .Common import Utils
 from . import Config
-from .RttiInfomation import TypeCreation
+from .RttiInformation import TypeCreation
 from .ClassDataStructureDetection.Constructors import DetectConstructor
-from .RttiInfomation.VirtualTableInference import VirtualFunctionTable
+from .RttiInformation.VirtualTableInference import VirtualFunctionTable
 
 
 def is_bv_valid_for_plugin(bv: bn.binaryview) -> bool:
@@ -55,9 +49,8 @@ class InspectInBackground(bn.BackgroundTaskThread):
         if Config.CONSTRUCTOR_FUNCTION_HANDLING != 2:
             # Iterate over all found vfTables and detect their constructors
             print(f'ClassyPP: Constructor Detection process started...')
-            for base_addr, contained_functions in VirtualFunctionTable.global_vfTables.items():
-                if DetectConstructor.DetectConstructorForVTable(self.bv, base_addr, contained_functions):
-                    pass
+            pprint.pprint(VirtualFunctionTable.global_vfTables)
+            VirtualFunctionTable.DetectVTables(self.bv)
 
     def RTTI_inspection(self) -> bool:
         Utils.LogToFile(f'inspect: Starting Scan.')

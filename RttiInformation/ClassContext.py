@@ -6,7 +6,7 @@ from .ClassHierarchyInference import ClassHierarchyDeduction
 from ..Common import Utils
 from .. import Config
 from .ClassMemoryLayout import ClassStructCreation
-import pysnooper
+
 
 ###############################################################################################
 #                GLOBAL STRUCTS
