@@ -106,13 +106,13 @@ class GlobalClassContextManager:
     def DeduceClassHierarchies(self):
         ClassHierarchyDeduction.DefineClassHierarchy(self.bv)
 
-    def DefineRTTI(self) -> bool:
+    def DetectAndDefineAllInformation(self) -> bool:
         for sect in self.bv.sections.values():
             if IsSectionCompatibleToRTTI(sect):
                 current_address = sect.start
                 while current_address < sect.end - self.rtti_complete_object_locator_size:
                     if Col := self.GetCompleteObjectLocator(current_address):
-                        Utils.LogToFile(f'DefineRTTI: Defined {Col.__repr__()} \n')
+                        Utils.LogToFile(f'Defined {Col.__repr__()} \n')
                         print(f"Defined Class: {Utils.DemangleName(Col.mangled_class_name)}")
                         if Config.ENABLE_DEBUG_LOGGING:
                             self.DebugPrintCol(Col, current_address)

@@ -15,7 +15,7 @@ def VerifyNonRttiVtable(bv: bn.binaryview, potential_vtable_addr: int) -> bool:
     else:
         verified_vtable = VFTABLE(bv,
                                   potential_vtable_addr,
-                                  f"vtable_{str(potential_vtable_addr)}_nonRtti")
+                                  f"vtable_{hex(potential_vtable_addr)}_nonRtti")
         if verified_vtable.verified:
             return True
     return False
@@ -53,35 +53,14 @@ def DetectVTables(bv: bn.binaryview):
                 assignment_instructions = DetectConstructor.GetAllAssignmentInstructions(func)
                 # Check if the last assignment into offset 0 of Arg1 in the constructor func is a vTable.
                 suspected_vtable: int = assignment_instructions[0][-1]
-
-                class_name: str = CppClass.GenerateClassNameFromVtableAddr(suspected_vtable)
                 print(f"Found non RTTI vtable at {suspected_vtable}")
-                """
-                TODO : add information of base classes according to non 0x0 offset assignments.
-                
-                if VerifyNonRttiVtable(bv, suspected_vtable):
-                    if detected_class := CppClass.global_classes.get(class_name):
-                        # If the class was already defined then do nothing (for now)
-                        # TODO: merge more info into the class based on this newly found constructor.
-                        if func.start not in detected_class.constructors:
-                            detected_class.constructors.append(func.start)
-                    else:
-                        detected_class: CppClass.ClassyClass = CppClass.ClassyClass(name=class_name,
-                                                                                    vfTable_addr=suspected_vtable,
-                                                                                    constructors=[func.start])
+                if potential_constructors := DetectConstructor.DetectConstructorForVTable(bv, suspected_vtable):
+                    class_name: str = CppClass.GenerateClassNameFromVtableAddr(suspected_vtable)
+                    vtable = VFTABLE(bv, suspected_vtable, class_name)
+                    if vtable.verified:
+                        DetectConstructor.DefineConstructor(bv, potential_constructors, suspected_vtable, class_name)
 
-                    for class_offset, potential_table_addresses in assignment_instructions.items():
-
-                        for potential_vtable_addr in potential_table_addresses:
-                            if potential_vtable_addr in global_vfTables:
-                                pass
-                            else:
-                                if verified_vtable := VFTABLE(
-                                        bv,
-                                        potential_vtable_addr,
-                                        f"vtable_{str(potential_vtable_addr)}_nonRtti"):
-                                    pass
-                """
+    # TODO : add information of base classes according to non 0x0 offset assignments.
 
 
 class VFTABLE:

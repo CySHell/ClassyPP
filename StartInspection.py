@@ -49,14 +49,14 @@ class InspectInBackground(bn.BackgroundTaskThread):
         if Config.CONSTRUCTOR_FUNCTION_HANDLING != 2:
             # Iterate over all found vfTables and detect their constructors
             print(f'ClassyPP: Constructor Detection process started...')
-            pprint.pprint(VirtualFunctionTable.global_vfTables)
+            Utils.LogToFile(str(VirtualFunctionTable.global_vfTables))
             VirtualFunctionTable.DetectVTables(self.bv)
 
     def RTTI_inspection(self) -> bool:
         Utils.LogToFile(f'inspect: Starting Scan.')
         if TypeCreation.CreateTypes(self.bv):
             GCM: GlobalClassContextManager = GlobalClassContextManager(self.bv)
-            if GCM.DefineRTTI():
+            if GCM.DetectAndDefineAllInformation():
                 Utils.LogToFile(f'ClassyPP: Successfully created types.')
                 print(f'ClassyPP: Successfully defined RTTI Information.')
                 return True

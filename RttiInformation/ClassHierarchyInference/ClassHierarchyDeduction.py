@@ -76,7 +76,8 @@ def RenameFunction(bv: bn.binaryview, vtable_function: int, lca: int, function_i
         else:
             func.set_comment_at(func.start, f'{class_name}_method{function_index}')
         return True
-    except:
+    except Exception as e:
+        print(f"Unable to rename function {hex(vtable_function)}, got Exception: \n{e}")
         return False
 
 

@@ -2,6 +2,7 @@ import binaryninja as bn
 from typing import *
 from ... import Config
 from ...RttiInformation.VirtualTableInference import VirtualFunctionTable
+from ...Common import Utils
 
 global_constructor_destructor_list: List = list()
 
@@ -67,8 +68,9 @@ def GetAllAssignmentInstructions(func: bn.function.Function) -> Dict:
                                                 }
                                             )
                                 else:
-                                    print(f"GetAllAssignmentInstructions: UNKNOWN assignment type! please report this."
-                                          f"\nInstruction: {instr}")
+                                    Utils.LogToFile(f"GetAllAssignmentInstructions: UNKNOWN assignment type at HLIL "
+                                                    f"Address {hex(instr.address)} ! please report this. "
+                                                    f"\nInstruction: {instr}")
     except Exception as e:
         print(f"GetAllAssignmentInstructions {hex(func.start)}, Exception: {e}")
     # We are only interested in the last assignment of a vfTable in a function, since the ones before it are
@@ -107,7 +109,7 @@ def DetectConstructorForVTable(bv: bn.binaryview, vfTable_addr: int) -> list[bn.
     for potential_constructor in GetPotentialConstructors(bv, vfTable_addr):
         if VerifyConstructor(bv, potential_constructor):
             potential_constructors.append(potential_constructor)
-            print(f'ClassyPP: Found constructor - {potential_constructor.name}')
+            print(f'Found constructor - {potential_constructor.name}')
             global_constructor_destructor_list.append(potential_constructor.start)
     return potential_constructors
 
@@ -125,29 +127,33 @@ def IsDestructor(bv: bn.binaryview, potential_destructor: bn.function.Function) 
 
 
 def DefineConstructor(bv: bn.binaryview, potential_constructors: list[bn.function.Function],
-                      vtable_addr: int) -> bool:
+                      vtable_addr: int, class_name=None) -> bool:
     # Since several constructors with the same name (but different signature) may exist, we
     # will attach a postfix index to each of the names.
     constructor_index = 0
-    class_name: str = bv.get_data_var_at(vtable_addr).name
-    if class_name.endswith("_vfTable"):
-        # Remove the _vfTable tag from the name
-        class_name = class_name[:-8]
-    for constructor in potential_constructors:
-        func_type = "Constructor"
-        if IsDestructor(bv, constructor):
-            func_type = "Destructor"
-        if Config.CONSTRUCTOR_FUNCTION_HANDLING == 0:
-            AddComment(bv, constructor.start, vtable_addr,
-                       class_name, func_type)
-        elif Config.CONSTRUCTOR_FUNCTION_HANDLING == 1:
-            ChangeFuncName(bv, constructor.start, constructor_index,
+    if not class_name:
+        class_name: str = bv.get_data_var_at(vtable_addr).name
+    if class_name:
+        if class_name.endswith("_vfTable"):
+            # Remove the _vfTable tag from the name
+            class_name = class_name[:-8]
+        for constructor in potential_constructors:
+            func_type = "Constructor"
+            if IsDestructor(bv, constructor):
+                func_type = "Destructor"
+            if Config.CONSTRUCTOR_FUNCTION_HANDLING == 0:
+                AddComment(bv, constructor.start, vtable_addr,
                            class_name, func_type)
-        else:
-            # invalid choice
-            return False
-        constructor_index += 1
-    return True
+            elif Config.CONSTRUCTOR_FUNCTION_HANDLING == 1:
+                ChangeFuncName(bv, constructor.start, constructor_index,
+                               class_name, func_type)
+            else:
+                # invalid choice
+                return False
+            constructor_index += 1
+        return True
+    else:
+        print(f"DefineConstructor: Cannot get class name for vtable at {hex(vtable_addr)}")
 
 
 def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Function) -> bool:
