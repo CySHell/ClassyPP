@@ -5,7 +5,7 @@ global_classes: dict = dict()
 
 
 def GenerateClassNameFromVtableAddr(vTable_addr: int) -> str:
-    return f"class_{str(vTable_addr)}"
+    return f"class_{hex(vTable_addr)}_vfTable"
 
 
 @dataclass

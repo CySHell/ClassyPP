@@ -53,7 +53,7 @@ def DetectVTables(bv: bn.binaryview):
                 assignment_instructions = DetectConstructor.GetAllAssignmentInstructions(func)
                 # Check if the last assignment into offset 0 of Arg1 in the constructor func is a vTable.
                 suspected_vtable: int = assignment_instructions[0][-1]
-                print(f"Found non RTTI vtable at {suspected_vtable}")
+                print(f"Found non RTTI vtable at {hex(suspected_vtable)}")
                 if potential_constructors := DetectConstructor.DetectConstructorForVTable(bv, suspected_vtable):
                     class_name: str = CppClass.GenerateClassNameFromVtableAddr(suspected_vtable)
                     vtable = VFTABLE(bv, suspected_vtable, class_name)
