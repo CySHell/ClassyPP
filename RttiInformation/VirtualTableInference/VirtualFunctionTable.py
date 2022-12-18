@@ -1,11 +1,66 @@
 import binaryninja as bn
-
+from ...ClassDataStructureDetection.Constructors import DetectConstructor
+from ...ClassObjectRepresentation import CppClass
 from ...Common import Utils
 from typing import *
 
 # {vfTable_addr: [ContainedFunctions]}
 global_vfTables: Dict[int, List[int]] = dict()
 global_functions_contained_in_all_vfTables: List[int] = list()
+
+
+def VerifyNonRttiVtable(bv: bn.binaryview, potential_vtable_addr: int) -> bool:
+    if potential_vtable_addr in global_vfTables.keys():
+        return True
+    else:
+        verified_vtable = VFTABLE(bv,
+                                  potential_vtable_addr,
+                                  f"vtable_{hex(potential_vtable_addr)}_nonRtti")
+        if verified_vtable.verified:
+            return True
+    return False
+
+
+def DetectVTables(bv: bn.binaryview):
+    """
+    The general algorithm of this function is this:
+    1. Go over all recognized functions in the binaryView.
+    1.1 If the function is already defined as a constructor / destructor by the RTTI information then skip it.
+    1.2 If the function is verified as a possible constructor / destructor detection algorithm (but was not mentioned
+        by the RTTI information) then check all possible vtable assignments in the function.
+    2. First, if we have an assignment of a vTable to offset 0 of Arg1 then we assume this is indeed
+        a constructor / destructor - vTable is defined as vtable_vTableAddress_nonRtti, and class is defined
+        as class_vTableAddress.
+    3. Once we found a constructor / destructor then we add all non 0 offsets of Arg1 assignments found in the
+        function for further inspection (This is he deffered_vtable_addr list).
+        The logic here is that the class may contain vTable assignments of its base or multiple inherited classes,
+        and those vTables should also have their own constructors / destructors somewhere else in the file.
+    4. Once we searched all functions in the bv, we now iterate the deffered_vtable_addr list to detect which
+        of these addresses was later confirmed as a vtable, and accordingly we can add this information to the
+        correct class.
+    """
+    print("Searching for vTables...")
+    # First, we go over the known vfTables (As inferred from RTTI info) and locate their constructors.
+    for vtable_addr, contained_functions in global_vfTables.items():
+        if potential_constructors := DetectConstructor.DetectConstructorForVTable(bv, vtable_addr):
+            DetectConstructor.DefineConstructor(bv, potential_constructors, vtable_addr)
+    for func in bv.functions:
+        if func.start not in DetectConstructor.global_constructor_destructor_list and \
+                func.start not in global_functions_contained_in_all_vfTables:
+            if DetectConstructor.VerifyConstructor(bv, func):
+                # VerifyConstructor will check that there is a pointer assignment into offset 0x0
+                # in the "This" pointer (Arg1). Now we need to check if this pointer is a vTable.
+                assignment_instructions = DetectConstructor.GetAllAssignmentInstructions(func)
+                # Check if the last assignment into offset 0 of Arg1 in the constructor func is a vTable.
+                suspected_vtable: int = assignment_instructions[0][-1]
+                print(f"Found non RTTI vtable at {hex(suspected_vtable)}")
+                if potential_constructors := DetectConstructor.DetectConstructorForVTable(bv, suspected_vtable):
+                    class_name: str = CppClass.GenerateClassNameFromVtableAddr(suspected_vtable)
+                    vtable = VFTABLE(bv, suspected_vtable, class_name)
+                    if vtable.verified:
+                        DetectConstructor.DefineConstructor(bv, potential_constructors, suspected_vtable, class_name)
+
+    # TODO : add information of base classes according to non 0x0 offset assignments.
 
 
 class VFTABLE:
@@ -28,15 +83,20 @@ class VFTABLE:
             # class) then it is safe to change its type to 'void *' in order to "fix" the binja bug and allow it to
             # recognize data refs.
             vTable_data_var = self.bv.get_data_var_at(self.base_addr)
-            vTable_data_var.type = self.bv.parse_type_string("void*")[0]
-            # Now we should see data refs from this address
-            data_refs_from_base_addr = list(self.bv.get_data_refs_from(self.base_addr))
+            if vTable_data_var is not None:
+                vTable_data_var.type = self.bv.parse_type_string("void*")[0]
+                # Now we should see data refs from this address
+                data_refs_from_base_addr = list(self.bv.get_data_refs_from(self.base_addr))
+            else:
+                print(f"VerifyVFT: unable to get information on data variable at addr {self.base_addr}.")
+                return False
 
         if len(data_refs_from_base_addr) > 0:
             if self.bv.get_function_at(data_refs_from_base_addr[0]):
                 if self.DefineVFT():
                     # Update this vfTable in the global table, this will be used later for locating constructor funcs
                     global_vfTables.update({self.base_addr: self.contained_functions})
+                    global_functions_contained_in_all_vfTables.extend(self.contained_functions)
                     Utils.LogToFile(f'VFTABLE: verified table at address {hex(self.base_addr)}')
                     return True
         return False

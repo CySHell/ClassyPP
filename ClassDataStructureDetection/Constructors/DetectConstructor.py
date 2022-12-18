@@ -1,33 +1,92 @@
 import binaryninja as bn
-from typing import List
+from typing import *
 from ... import Config
-from ...RttiInfomation.VirtualTableInference import VirtualFunctionTable
-import pysnooper
+from ...RttiInformation.VirtualTableInference import VirtualFunctionTable
+from ...Common import Utils
+
+global_constructor_destructor_list: List = list()
 
 
-def GetVirtualTableAssignmentInstruction(func: bn.function.Function):
-    current_candidate_instr = None
-    for instr in func.hlil.instructions:
-        # <HighLevelILOperation.HLIL_ASSIGN: 17>
-        if instr.operation == 17:
-            # Check if Arg1 is being assigned to.
-            func_params = func.hlil.source_function.parameter_vars.vars
-            if func_params and instr.vars:
-                if func_params[0] == instr.vars[0]:
-                    # <HighLevelILOperation.HLIL_CONST_PTR: 27>, <HighLevelILOperation.HLIL_CONST: 26>
-                    if instr.operands[1].operation == 27 or instr.operands[1].operation == 26:
-                        # <HighLevelILOperation.HLIL_DEREF: 23>
-                        # <HighLevelILOperation.HLIL_DEREF_FIELD: 24>
-                        # De-referencing the pointer, meaning if this
-                        # pointer is to a struct, this is de-referencing offset 0x0.
-                        if instr.operands[0].operation == 23 or instr.operands[0].operation == 24:
-                            if type(instr.operands[0].operands[0]) == bn.highlevelil.HighLevelILVar:
-                                current_candidate_instr = instr
+def GetAllAssignmentInstructions(func: bn.function.Function) -> Dict:
+    """
+    Search the given function for all data references assigned to an offset into the pointer given
+    in Arg1 of the function (the "This" pointer).
+    :return {offset_into_Arg1: [DataVar address]}
+    """
+    candidate_instructions: Dict = dict()
+
+    try:
+        for instr in func.hlil.instructions:
+            # <HighLevelILOperation.HLIL_ASSIGN: 17>
+            if instr.operation.name == "HLIL_ASSIGN":
+                # Check if Arg1 is being assigned to.
+                func_params = func.hlil.source_function.parameter_vars.vars
+                if func_params and instr.vars:
+                    if func_params[0] == instr.vars[0]:
+                        if instr.operands[1].operation.name == "HLIL_CONST_PTR" or \
+                                instr.operands[1].operation.name == "HLIL_CONST":
+                            # A pointer or a constant is being assigned into an offset within Arg1
+                            # Example: <HLIL_ASSIGN: *(arg1 + 0x1a000) = &data_140645958>
+                            #        <HLIL_DEREF: *(arg1 + 0x1a000)>  <HLIL_CONST_PTR: &data_140645958>
+                            if instr.operands[0].operation.name == "HLIL_DEREF" or \
+                                    instr.operands[0].operation.name == "HLIL_DEREF_FIELD":
+                                if type(instr.operands[0].operands[0]) == bn.highlevelil.HighLevelILVar:
+                                    if instr.operands[0].operation.name == "HLIL_ARRAY_INDEX":
+                                        # Arg1 is treated as an array and the assignment is being done into
+                                        # an offset within the array.
+                                        # Example: <HLIL_ARRAY_INDEX: arg1[0x3400]>
+                                        #       <HLIL_VAR: arg1>, <HLIL_CONST: 0x3400>
+                                        offset_into_class = instr.operands[0].operands[1].operands[0]
+                                    else:
+                                        # Directly De-referencing the pointer, meaning if this pointer is to a
+                                        # struct, this is de-referencing offset 0x0.
+                                        offset_into_class = 0
+
+                                    if candidate_instructions.get(offset_into_class):
+                                        candidate_instructions[offset_into_class].append(
+                                            instr.operands[1].value.value
+                                        )
+                                    else:
+                                        candidate_instructions.update({0: [instr.operands[1].value.value]})
+
+                                elif type(instr.operands[0].operands[0]) == bn.highlevelil.HighLevelILAdd:
+                                    # Referencing an offset within the pointer.
+                                    # example: <HLIL_ADD: arg1 + 0x1a000>
+                                    #       [<HLIL_VAR: arg1>, <HLIL_CONST: 0x1a000>]
+                                    if instr.operands[0].operands[0].operands[1].operation.name == "HLIL_CONST":
+                                        offset_into_class = instr.operands[0].operands[0].operands[1].value.value
+                                        if candidate_instructions.get(offset_into_class):
+                                            candidate_instructions[offset_into_class].append(
+                                                instr.operands[1].value.value
+                                            )
+                                        else:
+                                            candidate_instructions.update(
+                                                {
+                                                    offset_into_class: [
+                                                        instr.operands[1].value.value
+                                                    ]
+                                                }
+                                            )
+                                else:
+                                    Utils.LogToFile(f"GetAllAssignmentInstructions: UNKNOWN assignment type at HLIL "
+                                                    f"Address {hex(instr.address)} ! please report this. "
+                                                    f"\nInstruction: {instr}")
+    except Exception as e:
+        print(f"GetAllAssignmentInstructions {hex(func.start)}, Exception: {e}")
+    # We are only interested in the last assignment of a vfTable in a function, since the ones before it are
+    # base classes.
+    return candidate_instructions
+
+
+def GetThisClassVirtualTableAssignmentInstruction(func: bn.function.Function) -> Optional[int]:
+    candidate_instructions = GetAllAssignmentInstructions(func)
 
     # We are only interested in the last assignment of a vfTable in a function, since the ones before it are
     # base classes.
-    # [
-    return current_candidate_instr
+    if candidate_instructions.get(0):
+        return candidate_instructions[0][-1]
+    else:
+        return None
 
 
 def GetPotentialConstructors(bv: bn.binaryview, vfTable_addr: int) -> \
@@ -45,14 +104,14 @@ def GetPotentialConstructors(bv: bn.binaryview, vfTable_addr: int) -> \
     return potential_constructors
 
 
-def DetectConstructorForVTable(bv: bn.binaryview, vfTable_addr: int, vfTable_contained_functions: List[int]) -> bool:
-    found_constructors = 0
-    potential_constructors: List[bn.function.Function] = GetPotentialConstructors(bv, vfTable_addr)
-    for potential_constructor in potential_constructors:
-        if VerifyConstructor(bv, potential_constructor, found_constructors):
-            print(f'ClassyPP: Found constructor - {potential_constructor.name}')
-            found_constructors += 1
-    return found_constructors != 0
+def DetectConstructorForVTable(bv: bn.binaryview, vfTable_addr: int) -> list[bn.function.Function]:
+    potential_constructors: List[bn.function.Function] = list()
+    for potential_constructor in GetPotentialConstructors(bv, vfTable_addr):
+        if VerifyConstructor(bv, potential_constructor):
+            potential_constructors.append(potential_constructor)
+            print(f'Found constructor - {potential_constructor.name}')
+            global_constructor_destructor_list.append(potential_constructor.start)
+    return potential_constructors
 
 
 def IsDestructor(bv: bn.binaryview, potential_destructor: bn.function.Function) -> bool:
@@ -67,36 +126,50 @@ def IsDestructor(bv: bn.binaryview, potential_destructor: bn.function.Function) 
     return False
 
 
-def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Function, found_constructors: int) -> bool:
+def DefineConstructor(bv: bn.binaryview, potential_constructors: list[bn.function.Function],
+                      vtable_addr: int, class_name=None) -> bool:
+    # Since several constructors with the same name (but different signature) may exist, we
+    # will attach a postfix index to each of the names.
+    constructor_index = 0
+    if not class_name:
+        class_name: str = bv.get_data_var_at(vtable_addr).name
+    if class_name:
+        if class_name.endswith("_vfTable"):
+            # Remove the _vfTable tag from the name
+            class_name = class_name[:-8]
+        for constructor in potential_constructors:
+            func_type = "Constructor"
+            if IsDestructor(bv, constructor):
+                func_type = "Destructor"
+            if Config.CONSTRUCTOR_FUNCTION_HANDLING == 0:
+                AddComment(bv, constructor.start, vtable_addr,
+                           class_name, func_type)
+            elif Config.CONSTRUCTOR_FUNCTION_HANDLING == 1:
+                ChangeFuncName(bv, constructor.start, constructor_index,
+                               class_name, func_type)
+            else:
+                # invalid choice
+                return False
+            constructor_index += 1
+        return True
+    else:
+        print(f"DefineConstructor: Cannot get class name for vtable at {hex(vtable_addr)}")
+
+
+def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Function) -> bool:
     # The heuristics used here will locate both the constructors and destructors.
     # It is not easy to automatically distinguish between the two.
-    func_type = "Constructor"
+
     try:
-        if instr := GetVirtualTableAssignmentInstruction(potential_constructor):
-            pointer: int = instr.operands[1].operands[0]
+        if pointer := GetThisClassVirtualTableAssignmentInstruction(potential_constructor):
             data_refs = list(bv.get_data_refs_from(pointer))
             if data_refs:
                 if len(data_refs) != 1:
                     # print(f'Error, too many data refs for {pointer}')
-                    pass
+                    return False
                 else:
                     # Check if this is a function pointer
-                    if bv.get_function_at(data_refs[0]):
-                        class_name: str = bv.get_data_var_at(pointer).name
-                        if class_name.endswith("_vfTable"):
-                            # Remove the _vfTable tag from the name
-                            class_name = class_name[:-8]
-                        if IsDestructor(bv, potential_constructor):
-                            func_type = "Destructor"
-                        if Config.CONSTRUCTOR_FUNCTION_HANDLING == 0:
-                            AddComment(bv, potential_constructor.start, pointer,
-                                       class_name, func_type)
-                        elif Config.CONSTRUCTOR_FUNCTION_HANDLING == 1:
-                            ChangeFuncName(bv, potential_constructor.start, found_constructors,
-                                           class_name, func_type)
-                        else:
-                            # invalid choice
-                            return False
+                    if bv.get_function_at(data_refs[0]) is not None:
                         return True
         else:
             # print(f'Error in instruction {instr}')
