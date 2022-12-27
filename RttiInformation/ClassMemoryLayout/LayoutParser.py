@@ -285,7 +285,8 @@ if __name__ == "__main__":
     for filename in os.listdir(Config.PATH_TO_LAYOUT_FOLDER):
         if filename.startswith('layout_'):
             print(f'Parsing file {filename}')
-            parse_layout_file(f'{Config.PATH_TO_LAYOUT_FOLDER}{filename}')
+            parse_layout_file(os.path.join(Config.PATH_TO_LAYOUT_FOLDER,
+                                           filename))
 
     fixup_member_types()
     verify_member_types()

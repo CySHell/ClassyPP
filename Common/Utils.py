@@ -1,5 +1,6 @@
 import subprocess
 from os.path import exists
+import os
 import binaryninja as bn
 from .. import Config
 
@@ -38,7 +39,7 @@ def GetLogfileHandle():
     else:
         LoggingDirectory: str = Config.LOGFILE_FULL_PATH
 
-    log_file_path = f"{LoggingDirectory}\\log_debug.txt"
+    log_file_path = os.path.join(LoggingDirectory, 'log_debug.txt')
     try:
         if exists(LoggingDirectory):
             log_file = open(log_file_path, 'w')

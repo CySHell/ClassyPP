@@ -4,7 +4,7 @@ import os
 #   General
 ######################################################
 
-BINARYNINJA_PLUGIN_FOLDER = f'AppData\\Roaming\\Binary Ninja\\plugins'
+PLUGIN_FOLDER = os.path.dirname(__file__)
 
 ######################################################
 #   64bit constants
@@ -46,25 +46,24 @@ ENABLE_DEBUG_LOGGING = False
 # If set to True the user will get a prompt to choose the logging directory
 LOG_FILES_DETERMINED_BY_USER = True
 
-COMPLETE_OBJECT_LOCATOR_RECORD_FILE = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\ColRecord.txt')
-CLASS_HIERARCHY_DESCRIPTORS_RECORD_FILE = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\ChdRecord.txt')
-BASE_CLASS_DESCRIPTORS_RECORD_FILE = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\BcdRecord.txt')
+COMPLETE_OBJECT_LOCATOR_RECORD_FILE = os.path.join(
+    PLUGIN_FOLDER, "Logs/ColRecord.txt")
+CLASS_HIERARCHY_DESCRIPTORS_RECORD_FILE = os.path.join(
+    PLUGIN_FOLDER, "Logs/ChdRecord.txt")
+BASE_CLASS_DESCRIPTORS_RECORD_FILE = os.path.join(
+    PLUGIN_FOLDER, "Logs/BcdRecord.txt")
 
-LOGFILE_FULL_PATH = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Logs\\log_debug.txt')
+LOGFILE_FULL_PATH = os.path.join(
+    PLUGIN_FOLDER, "Logs")
 
 ######################################################
 #   Class info extraction utilities
 ######################################################
 
-DEMANGLER_FULL_PATH = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\Common\\demumble.exe')
+DEMANGLER_FULL_PATH = os.path.join(
+    PLUGIN_FOLDER, "Common/demumble.exe")
 
-GRAPH_FILE_FULL_PATH = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\')
+GRAPH_FILE_FULL_PATH = PLUGIN_FOLDER
 
 # This folder contains files produced by the output of the MSVC CL compiler with the flag /d1reportAllClassLayout.
 # Each file should start with "layout_" .
@@ -74,5 +73,5 @@ PATH_TO_LAYOUT_FOLDER = os.path.expandvars(
     '%CLASS_LAYOUT_FOLDER%')
 
 # This file contains the JSON format for all the classes that were parsed from MSVC output in %PATH_TO_LAYOUT_FOLDER%
-PATH_TO_CLASS_LAYOUTS_FILE = os.path.expandvars(
-    f'%USERPROFILE%\\{BINARYNINJA_PLUGIN_FOLDER}\\ClassyPP\\RttiInfomation\\ClassMemoryLayout\\class_layouts.layout')
+PATH_TO_CLASS_LAYOUTS_FILE = os.path.join(
+    PLUGIN_FOLDER, "RttiInformation/ClassMemoryLayout/class_layouts.layout")
