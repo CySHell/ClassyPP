@@ -21,7 +21,12 @@ def GetBaseOfFileContainingAddress(bv: bn.binaryninja.binaryview.BinaryView, add
 
 
 def DemangleName(mangled_name: str) -> str:
-    demangled_name: str = subprocess.getoutput([Config.DEMANGLER_FULL_PATH, mangled_name])
+    try:
+        demangled_name: str = subprocess.check_output(
+            [Config.DEMANGLER_FULL_PATH, mangled_name])
+    except subprocess.CalledProcessError:
+        return mangled_name
+
     # Sometimes classes that use lambda functions cannot be parsed correctly and we get this error msg.
     if demangled_name.startswith('The system cannot find the file specified'):
         return mangled_name

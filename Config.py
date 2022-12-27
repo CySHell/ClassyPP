@@ -1,8 +1,18 @@
 import os
+import sys
 
 ######################################################
 #   General
 ######################################################
+
+if sys.platform == 'win32':
+    BINARY_SUFFIX = '.exe'
+elif sys.platform == 'linux':
+    BINARY_SUFFIX = '_linux'
+elif sys.platform == 'darwin':
+    BINARY_SUFFIX = '_mac_universal'
+else:
+    raise RuntimeError('Unsupported OS')
 
 PLUGIN_FOLDER = os.path.dirname(__file__)
 
@@ -61,7 +71,7 @@ LOGFILE_FULL_PATH = os.path.join(
 ######################################################
 
 DEMANGLER_FULL_PATH = os.path.join(
-    PLUGIN_FOLDER, "Common/demumble.exe")
+    PLUGIN_FOLDER, "Common/demumble" + BINARY_SUFFIX)
 
 GRAPH_FILE_FULL_PATH = PLUGIN_FOLDER
 
