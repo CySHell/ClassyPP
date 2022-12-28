@@ -23,7 +23,7 @@ def GetBaseOfFileContainingAddress(bv: bn.binaryninja.binaryview.BinaryView, add
 def DemangleName(mangled_name: str) -> str:
     try:
         demangled_name: str = subprocess.check_output(
-            [Config.DEMANGLER_FULL_PATH, mangled_name])
+            [Config.DEMANGLER_FULL_PATH, mangled_name]).decode()
     except subprocess.CalledProcessError:
         return mangled_name
 
