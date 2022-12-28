@@ -109,18 +109,22 @@ class GlobalClassContextManager:
     def DetectAndDefineAllInformation(self) -> bool:
         for sect in self.bv.sections.values():
             if IsSectionCompatibleToRTTI(sect):
-                current_address = sect.start
-                while current_address < sect.end - self.rtti_complete_object_locator_size:
+                # Find start of next possible position of a complete
+                # object locator by searching for the signature.
+                if self.bv.arch.name == 'x86_64':
+                    signature = b'\x01\x00\x00\x00'
+                else:
+                    signature = b'\x00\x00\x00\x00'
+                for (current_address, _) in self.bv.find_all_data(
+                    sect.start,
+                    sect.end - self.rtti_complete_object_locator_size,
+                        signature):
                     if Col := self.GetCompleteObjectLocator(current_address):
                         Utils.LogToFile(f'Defined {Col.__repr__()} \n')
-                        print(f"Defined Class: {Utils.DemangleName(Col.mangled_class_name)}")
+                        print(
+                            f"Defined Class: {Utils.DemangleName(Col.mangled_class_name)}")
                         if Config.ENABLE_DEBUG_LOGGING:
                             self.DebugPrintCol(Col, current_address)
-
-                        current_address += self.rtti_complete_object_locator_size
-                    else:
-                        # A Col will be 4 bytes aligned
-                        current_address += 4
         # TODO: Define condition for this function to fail.
 
         self.DeduceClassHierarchies()
