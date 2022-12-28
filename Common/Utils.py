@@ -1,5 +1,6 @@
 import subprocess
 from os.path import exists
+import os
 import binaryninja as bn
 from .. import Config
 
@@ -20,7 +21,12 @@ def GetBaseOfFileContainingAddress(bv: bn.binaryninja.binaryview.BinaryView, add
 
 
 def DemangleName(mangled_name: str) -> str:
-    demangled_name: str = subprocess.getoutput([Config.DEMANGLER_FULL_PATH, mangled_name])
+    try:
+        demangled_name: str = subprocess.check_output(
+            [Config.DEMANGLER_FULL_PATH, mangled_name])
+    except subprocess.CalledProcessError:
+        return mangled_name
+
     # Sometimes classes that use lambda functions cannot be parsed correctly and we get this error msg.
     if demangled_name.startswith('The system cannot find the file specified'):
         return mangled_name
@@ -38,7 +44,7 @@ def GetLogfileHandle():
     else:
         LoggingDirectory: str = Config.LOGFILE_FULL_PATH
 
-    log_file_path = f"{LoggingDirectory}\\log_debug.txt"
+    log_file_path = os.path.join(LoggingDirectory, 'log_debug.txt')
     try:
         if exists(LoggingDirectory):
             log_file = open(log_file_path, 'w')
