@@ -58,12 +58,13 @@ class GlobalClassContextManager:
     and attempt to accurately define the different classes found.
     """
 
-    def __init__(self, bv: bn.binaryview):
+    def __init__(self, bv: bn.binaryview, bt: bn.BackgroundTask):
         self.pointer_size = None
         self.int_size = None
         self.rtti_complete_object_locator_size = None
         self.name_string_offset_inside_typedescriptor = None
         self.bv: bn.binaryview = bv
+        self.bt: bn.BackgroundTask = bt
 
         self.Define32or64BitConstants()
 
@@ -119,6 +120,8 @@ class GlobalClassContextManager:
                     sect.start,
                     sect.end - self.rtti_complete_object_locator_size,
                         signature):
+                    if self.bt.cancelled:
+                        raise KeyboardInterrupt()
                     if Col := self.GetCompleteObjectLocator(current_address):
                         Utils.LogToFile(f'Defined {Col.__repr__()} \n')
                         print(

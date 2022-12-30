@@ -36,13 +36,18 @@ def CleanupPlugin():
 class InspectInBackground(bn.BackgroundTaskThread):
 
     def __init__(self, bv: bn.binaryview):
-        bn.BackgroundTaskThread.__init__(self, "ClassyPP - Performing inspection and extraction...", True)
+        bn.BackgroundTaskThread.__init__(
+            self, "ClassyPP - Performing inspection and extraction...", True)
         self.bv = bv
 
     def run(self):
-        if GetUserInputs():
-            self.RTTI_inspection()
-            self.DetectAndVerifyConstructor()
+        try:
+            if GetUserInputs():
+                self.RTTI_inspection()
+                self.DetectAndVerifyConstructor()
+        except KeyboardInterrupt:
+            Utils.LogToFile('Cancelled by user request')
+            print('Cancelled by user request')
         CleanupPlugin()
 
     def DetectAndVerifyConstructor(self):
@@ -50,12 +55,13 @@ class InspectInBackground(bn.BackgroundTaskThread):
             # Iterate over all found vfTables and detect their constructors
             print(f'ClassyPP: Constructor Detection process started...')
             Utils.LogToFile(str(VirtualFunctionTable.global_vfTables))
-            VirtualFunctionTable.DetectVTables(self.bv)
+            VirtualFunctionTable.DetectVTables(self.bv, self)
 
     def RTTI_inspection(self) -> bool:
         Utils.LogToFile(f'inspect: Starting Scan.')
         if TypeCreation.CreateTypes(self.bv):
-            GCM: GlobalClassContextManager = GlobalClassContextManager(self.bv)
+            GCM: GlobalClassContextManager = GlobalClassContextManager(
+                self.bv, self)
             if GCM.DetectAndDefineAllInformation():
                 Utils.LogToFile(f'ClassyPP: Successfully created types.')
                 print(f'ClassyPP: Successfully defined RTTI Information.')

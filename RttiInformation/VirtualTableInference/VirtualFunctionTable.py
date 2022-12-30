@@ -21,7 +21,7 @@ def VerifyNonRttiVtable(bv: bn.binaryview, potential_vtable_addr: int) -> bool:
     return False
 
 
-def DetectVTables(bv: bn.binaryview):
+def DetectVTables(bv: bn.binaryview, bt: bn.BackgroundTask):
     """
     The general algorithm of this function is this:
     1. Go over all recognized functions in the binaryView.
@@ -42,6 +42,8 @@ def DetectVTables(bv: bn.binaryview):
     print("Searching for vTables...")
     # First, we go over the known vfTables (As inferred from RTTI info) and locate their constructors.
     for vtable_addr, contained_functions in global_vfTables.items():
+        if bt.cancelled:
+            raise KeyboardInterrupt()
         if potential_constructors := DetectConstructor.DetectConstructorForVTable(bv, vtable_addr):
             DetectConstructor.DefineConstructor(bv, potential_constructors, vtable_addr)
     for func in bv.functions:
