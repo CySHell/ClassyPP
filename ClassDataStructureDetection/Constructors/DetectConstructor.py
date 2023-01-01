@@ -186,4 +186,9 @@ def AddComment(bv: bn.binaryview, constructor_addr: int, vtable_addr: int, class
 
 def ChangeFuncName(bv: bn.binaryview, constructor_addr: int, found_constructors: int, class_name: str,
                    func_type: str):
-    bv.get_function_at(constructor_addr).name = f"{class_name}::{func_type}_{found_constructors}"
+    func = bv.get_function_at(constructor_addr)
+    if not func:
+        func = bv.create_user_function(constructor_addr)
+        print(f'Defined new constructor at {hex(constructor_addr)}')
+        bv.update_analysis_and_wait()
+    func.name = f"{class_name}::{func_type}_{found_constructors}"

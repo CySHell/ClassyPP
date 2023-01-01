@@ -71,6 +71,10 @@ def RenameFunction(bv: bn.binaryview, vtable_function: int, lca: int, function_i
     class_name: str = ClassContext.base_class_descriptors[lca]['class_name']
     try:
         func: bn.Function = bv.get_function_at(vtable_function)
+        if not func:
+            func = bv.create_user_function(vtable_function)
+            print(f'Defined new function at {hex(vtable_function)}')
+            bv.update_analysis_and_wait()
         if FuncNameNotDefinedByPDB(func):
             func.name = f'{class_name}_method{function_index}'
         else:
