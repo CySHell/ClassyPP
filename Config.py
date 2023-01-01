@@ -28,7 +28,7 @@ PTR_SIZE_X64 = INT64_T
 
 
 ######################################################
-#   64bit constants
+#   32bit constants
 ######################################################
 NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X32 = 0x8
 RTTI_COMPLETE_OBJECT_LOCATOR_SIZE_X32 = 0x18
