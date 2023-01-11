@@ -22,8 +22,14 @@ def GetBaseOfFileContainingAddress(bv: bn.binaryninja.binaryview.BinaryView, add
 
 def DemangleName(mangled_name: str) -> str:
     try:
-        demangled_name = subprocess.check_output(
-            [Config.DEMANGLER_FULL_PATH, mangled_name])
+        print("Processing mangled name ", mangled_name)
+        if os.name == 'nt':
+            CREATE_NO_WINDOW = 0x08000000
+            demangled_name = subprocess.check_output(
+                [Config.DEMANGLER_FULL_PATH, mangled_name], creationflags=CREATE_NO_WINDOW)
+        else:
+            demangled_name = subprocess.check_output(
+                [Config.DEMANGLER_FULL_PATH, mangled_name])
         # Linux returns demangled_name as a bytes object, need to convert to string.
         if type(demangled_name) != str:
             demangled_name = demangled_name.decode()
