@@ -22,7 +22,6 @@ def GetBaseOfFileContainingAddress(bv: bn.binaryninja.binaryview.BinaryView, add
 
 def DemangleName(mangled_name: str) -> str:
     try:
-        print("Processing mangled name ", mangled_name)
         if os.name == 'nt':
             CREATE_NO_WINDOW = 0x08000000
             demangled_name = subprocess.check_output(
