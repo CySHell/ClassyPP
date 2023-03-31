@@ -143,7 +143,7 @@ class VFTABLE:
                                                  pointer.name)
                     return self.bv.get_data_var_at(pointer_addr)
                 except Exception as e:
-                    Utils.LogToFile(f"GetPointer: Exception while trying to define pointer at addr {pointer_addr}.\n"
+                    print(f"GetPointer: Exception while trying to define pointer at addr {pointer_addr}.\n"
                                     f"Exception: {e}")
                     return None
             return pointer
@@ -152,15 +152,16 @@ class VFTABLE:
     def IsPointerToFunction(self, pointer_addr: int) -> bool:
         try:
             if pointer := self.GetPointer(pointer_addr):
-                if self.bv.get_sections_at(pointer.value)[0].semantics is \
-                        bn.SectionSemantics.ReadOnlyCodeSectionSemantics:
-                    if not self.bv.get_function_at(pointer.value):
-                        self.bv.add_function(pointer.value)
-                    self.contained_functions.append(pointer.value)
-                    return True
+                if segment := self.bv.get_segment_at(pointer.value):
+                    if segment.executable:
+                        if not self.bv.get_function_at(pointer.value):
+                            self.bv.add_function(pointer.value)
+                        self.contained_functions.append(pointer.value)
+                        return True
         except Exception as e:
-            Utils.LogToFile(f"IsPointerToFunction: Failed to determine if pointer to function at {pointer_addr}.\n"
+            print(f"IsPointerToFunction: Failed to determine if pointer to function at {hex(pointer_addr)}.\n"
                             f"Exception: {e}")
+        print(f"not a ptr to a func: {hex(pointer_addr)}")
         return False
 
     def GetLength(self):
