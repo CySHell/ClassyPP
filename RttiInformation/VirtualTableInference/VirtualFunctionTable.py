@@ -143,7 +143,7 @@ class VFTABLE:
                                                  pointer.name)
                     return self.bv.get_data_var_at(pointer_addr)
                 except Exception as e:
-                    print(f"GetPointer: Exception while trying to define pointer at addr {pointer_addr}.\n"
+                    Utils.LogToFile(f"GetPointer: Exception while trying to define pointer at addr {pointer_addr}.\n"
                                     f"Exception: {e}")
                     return None
             return pointer
@@ -159,9 +159,9 @@ class VFTABLE:
                         self.contained_functions.append(pointer.value)
                         return True
         except Exception as e:
-            print(f"IsPointerToFunction: Failed to determine if pointer to function at {hex(pointer_addr)}.\n"
+            Utils.LogToFile(f"IsPointerToFunction: Failed to determine if pointer to function at {hex(pointer_addr)}.\n"
                             f"Exception: {e}")
-        print(f"not a ptr to a func: {hex(pointer_addr)}")
+            
         return False
 
     def GetLength(self):
