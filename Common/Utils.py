@@ -22,24 +22,30 @@ def GetBaseOfFileContainingAddress(bv: bn.binaryninja.binaryview.BinaryView, add
 cached_mangle_dict = {}
 
 def DemangleName(mangled_name: str) -> str:
+    CREATE_NO_WINDOW = 0x08000000
     if mangled_name in cached_mangle_dict.keys():
         return cached_mangle_dict[mangled_name]
     else:
-        try:
-            demangled_name: str = subprocess.check_output(
-                [Config.DEMANGLER_FULL_PATH, mangled_name]).decode()
-        except subprocess.CalledProcessError:
-            cached_mangle_dict[mangled_name] = mangled_name
-            return mangled_name
-
         # Sometimes classes that use lambda functions cannot be parsed correctly and we get this error msg.
         if demangled_name.startswith('The system cannot find the file specified'):
-            cached_mangle_dict[mangled_name] = mangled_name
             return mangled_name
         else:
-            demangled_name = demangled_name.split(" `RTTI")[0]
-            cached_mangle_dict[mangled_name] = demangled_name
-            return demangled_name
+            return demangled_name.split(" `RTTI")[0]
+            try:
+                demangled_name: str = subprocess.check_output(
+                    [Config.DEMANGLER_FULL_PATH, mangled_name], creationflags=CREATE_NO_WINDOW).decode()
+            except subprocess.CalledProcessError:
+                cached_mangle_dict[mangled_name] = mangled_name
+                return mangled_name
+
+            # Sometimes classes that use lambda functions cannot be parsed correctly and we get this error msg.
+            if demangled_name.startswith('The system cannot find the file specified'):
+                cached_mangle_dict[mangled_name] = mangled_name
+                return mangled_name
+            else:
+                demangled_name = demangled_name.split(" `RTTI")[0]
+                cached_mangle_dict[mangled_name] = demangled_name
+                return demangled_name
 
 
 ############################################################################################
