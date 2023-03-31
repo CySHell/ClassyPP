@@ -79,7 +79,7 @@ This plugin installs as a normal binja plugin - just clone it into the plugins' 
 Edit the Config.py file for values suitable to your environment.
 	
 ## Limitations:
-	- Supports MSVC Only
+	- Supports MSVC compiled binaries Only
 	- x86 32\64 bit architecture only
 	- Currently no support for Multiple Virtual Inheritence (Support for this will be added in the future)
 
