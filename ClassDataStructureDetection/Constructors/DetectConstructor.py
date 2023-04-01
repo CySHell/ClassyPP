@@ -142,13 +142,14 @@ def DefineConstructor(bv: bn.binaryview, potential_constructors: list[bn.functio
             if Config.CONSTRUCTOR_FUNCTION_HANDLING == 0:
                 AddComment(bv, constructor.start, vtable_addr,
                            class_name, func_type)
+                constructor_index += 1
             elif Config.CONSTRUCTOR_FUNCTION_HANDLING == 1:
                 ChangeFuncName(bv, constructor.start, constructor_index,
                                class_name, func_type)
+                constructor_index += 1
             else:
                 # invalid choice
                 return False
-            constructor_index += 1
         return True
     else:
         print(f"DefineConstructor: Cannot get class name for vtable at {hex(vtable_addr)}")
