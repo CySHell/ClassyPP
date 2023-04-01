@@ -134,9 +134,7 @@ def DefineConstructor(bv: bn.binaryview, potential_constructors: list[bn.functio
     if not class_name:
         class_name: str = bv.get_data_var_at(vtable_addr).name
     if class_name:
-        if class_name.endswith("_vfTable"):
-            # Remove the _vfTable tag from the name
-            class_name = class_name[:-8]
+        class_name.replace("_vfTable", "")
         for constructor in potential_constructors:
             func_type = "Constructor"
             if IsDestructor(bv, constructor):
