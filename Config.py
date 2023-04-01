@@ -44,7 +44,7 @@ PTR_SIZE_X32 = INT32_T
 # 0 - Add comment for constructor function
 # 1 - Change name of constructor function
 # 2 - Do not detect constructors
-CONSTRUCTOR_FUNCTION_HANDLING = 2
+CONSTRUCTOR_FUNCTION_HANDLING = 1
 
 
 ######################################################
