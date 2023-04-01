@@ -1,14 +1,20 @@
 import subprocess
 from os.path import exists
 import os
-import binaryninja as bn
 from .. import Config
+from binaryninja.binaryview import BinaryView
+import binaryninja as bn
 
 
-def GetBaseOfFileContainingAddress(bv: bn.binaryninja.binaryview.BinaryView, addr: int) -> int:
+def GetBaseOfFileContainingAddress(bv: BinaryView, addr: int) -> int:
     # When loading other files, such as dlls, into the memory space of the current bv we need
     # to determine the base of the file in order to calculate relative addresses.
-    section_name: str = bv.get_sections_at(addr)[0].name
+    sections = bv.get_sections_at(addr) 
+    
+    if len(sections) < 1:
+        return bv.start
+    
+    section_name: str = sections[0].name
     base_file_name_array = section_name.split(".")
     base_file_name = base_file_name_array[0]
 

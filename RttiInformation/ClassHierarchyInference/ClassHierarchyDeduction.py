@@ -68,7 +68,7 @@ def FuncNameNotDefinedByPDB(func: bn.Function) -> bool:
 
 
 def RenameFunction(bv: bn.binaryview, vtable_function: int, lca: int, function_index: int) -> bool:
-    class_name: str = ClassContext.base_class_descriptors[lca]['class_name']
+    class_name: str = ClassContext.base_class_descriptors[lca]['class_name'].replace("class ", "")
     try:
         func: bn.Function = bv.get_function_at(vtable_function)
         if not func:
@@ -76,9 +76,9 @@ def RenameFunction(bv: bn.binaryview, vtable_function: int, lca: int, function_i
             print(f'Defined new function at {hex(vtable_function)}')
             bv.update_analysis_and_wait()
         if FuncNameNotDefinedByPDB(func):
-            func.name = f'{class_name}_method{function_index}'
+            func.name = f'{class_name}::Method{function_index}'
         else:
-            func.set_comment_at(func.start, f'{class_name}_method{function_index}')
+            func.set_comment_at(func.start, f'{class_name}::Method{function_index}')
         return True
     except Exception as e:
         print(f"Unable to rename function {hex(vtable_function)}, got Exception: \n{e}")
@@ -155,6 +155,7 @@ def WriteGraphToFile(graph: DiGraph, gexf=True, graphml=False):
 
 
 def CreateHierarchyGraph() -> nx.DiGraph:
+    print("creating hierarchy graph")
     class_hierarchy_graph: DiGraph = nx.DiGraph()
     resolved_bcd: List[int] = list()
     if CreateAllBaseTypeNodes(class_hierarchy_graph):

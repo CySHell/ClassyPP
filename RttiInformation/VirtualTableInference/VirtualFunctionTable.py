@@ -1,4 +1,7 @@
+from binaryninja.function import Function
+from binaryninja.binaryview import BinaryView, DataVariable
 import binaryninja as bn
+from ... import Config
 from ...ClassDataStructureDetection.Constructors import DetectConstructor
 from ...ClassObjectRepresentation import CppClass
 from ...Common import Utils
@@ -9,7 +12,7 @@ global_vfTables: Dict[int, List[int]] = dict()
 global_functions_contained_in_all_vfTables: List[int] = list()
 
 
-def VerifyNonRttiVtable(bv: bn.binaryview, potential_vtable_addr: int) -> bool:
+def VerifyNonRttiVtable(bv: BinaryView, potential_vtable_addr: int) -> bool:
     if potential_vtable_addr in global_vfTables.keys():
         return True
     else:
@@ -21,7 +24,7 @@ def VerifyNonRttiVtable(bv: bn.binaryview, potential_vtable_addr: int) -> bool:
     return False
 
 
-def DetectVTables(bv: bn.binaryview, bt: bn.BackgroundTask):
+def DetectVTables(bv: BinaryView, bt: bn.BackgroundTask):
     """
     The general algorithm of this function is this:
     1. Go over all recognized functions in the binaryView.
@@ -40,6 +43,7 @@ def DetectVTables(bv: bn.binaryview, bt: bn.BackgroundTask):
         correct class.
     """
     print("Searching for vTables...")
+    
     # First, we go over the known vfTables (As inferred from RTTI info) and locate their constructors.
     for vtable_addr, contained_functions in global_vfTables.items():
         if bt.cancelled:
@@ -53,6 +57,15 @@ def DetectVTables(bv: bn.binaryview, bt: bn.BackgroundTask):
                 # VerifyConstructor will check that there is a pointer assignment into offset 0x0
                 # in the "This" pointer (Arg1). Now we need to check if this pointer is a vTable.
                 assignment_instructions = DetectConstructor.GetAllAssignmentInstructions(func)
+                
+                # NOTE(unknowntrojan) check all assignments to *this for constructors.
+                # NOTE(unknowntrojan) this may be slow, but so is this entire script.
+                for suspected_vtable in assignment_instructions[0]:
+                    class_name: str = CppClass.GenerateClassNameFromVtableAddr(suspected_vtable)
+                    vtable = VFTABLE(bv, suspected_vtable, class_name)
+                    if vtable.verified:
+                        DetectConstructor.DefineConstructor(bv, potential_constructors, suspected_vtable, class_name)
+                
                 # Check if the last assignment into offset 0 of Arg1 in the constructor func is a vTable.
                 suspected_vtable: int = assignment_instructions[0][-1]
                 print(f"Found non RTTI vtable at {hex(suspected_vtable)}")
@@ -67,14 +80,38 @@ def DetectVTables(bv: bn.binaryview, bt: bn.BackgroundTask):
 
 class VFTABLE:
 
-    def __init__(self, bv: bn.binaryview, base_addr: int, demangled_name: str):
-        self.bv: bn.binaryview = bv
+    def __init__(self, bv: BinaryView, base_addr: int, demangled_name: str):
+        self.bv: BinaryView = bv
         self.base_addr: int = base_addr
         self.vfTable_length: int = 0
         # Strip the "class " from the start of the demangled name.
         self.demangled_name: str = demangled_name[6:] if demangled_name.startswith("class ") else demangled_name
         self.contained_functions: List[int] = list()
         self.verified = self.VerifyVFT()
+
+    def RenameVFunc(self, entry: int):
+        if data_var := self.bv.get_data_var_at(entry):
+            if isinstance(data_var, DataVariable):
+                addr = data_var.value
+                
+                if func := self.bv.get_function_at(addr):
+                    if isinstance(func, Function):
+                        refs = 0
+                        for ref in self.bv.get_data_refs(addr):
+                            refs += 1
+                        print(f"checking xrefs to vtable entry at {hex(addr)}: has {refs} refs")
+                        
+                        if refs == 1:
+                            name = self.demangled_name.replace("_vfTable", "")
+                            print(f"Found lonely member function in {name}, vtable at {hex(self.base_addr)}")
+                            if Config.CONSTRUCTOR_FUNCTION_HANDLING == 0:
+                                self.bv.set_comment_at(addr, f"Member of class {name}, virtual table at {hex(self.base_addr)}")
+                            if Config.CONSTRUCTOR_FUNCTION_HANDLING == 1:
+                                func = self.bv.get_function_at(data_var.value)
+                                if not func:
+                                    func = self.bv.create_user_function(addr)
+                                    self.bv.update_analysis_and_wait()
+                                func.name = f"{name}::{func.name}"
 
     def VerifyVFT(self) -> bool:
         data_refs_from_base_addr = list(self.bv.get_data_refs_from(self.base_addr))
@@ -108,6 +145,8 @@ class VFTABLE:
         current_data_var_addr: int = self.base_addr
         while self.IsPointerToFunction(current_data_var_addr):
             self.vfTable_length += 1
+            # NOTE(unknowntrojan) i implemented this, and then noticed it was in ClassyPP all along, just disabled.
+            # self.RenameVFunc(current_data_var_addr)
             current_data_var_addr += 0x8 if self.bv.arch.name == "x86_64" else 0x4
         if self.vfTable_length > 0:
             try:

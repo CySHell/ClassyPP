@@ -181,7 +181,7 @@ def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Func
 
 def AddComment(bv: bn.binaryview, constructor_addr: int, vtable_addr: int, class_name: str, func_type: str):
     bv.set_comment_at(constructor_addr, f"Suspected {func_type} function for class {class_name}, virtual table"
-                                        f"at {hex(vtable_addr)}")
+                                        f" at {hex(vtable_addr)}")
 
 
 def ChangeFuncName(bv: bn.binaryview, constructor_addr: int, found_constructors: int, class_name: str,
