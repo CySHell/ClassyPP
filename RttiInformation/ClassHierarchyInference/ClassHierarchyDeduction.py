@@ -64,7 +64,7 @@ def FuncNameNotDefinedByPDB(func: bn.Function) -> bool:
     # If a PDB database has already defined this function name then we do not want to override
     # that name since it is a more accurate description of the function.
     # instead, we just add a comment in the function to indicate it is part of a vTable.
-    return func.name.startswith("sub_") or "::" not in func.name
+    return func.name.startswith("sub_") and "::" not in func.name
 
 
 def RenameFunction(bv: bn.binaryview, vtable_function: int, lca: int, function_index: int) -> bool:
