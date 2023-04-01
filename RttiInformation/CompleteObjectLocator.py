@@ -159,7 +159,7 @@ class CompleteObjectLocator:
         vft: VirtualFunctionTable.VFTABLE = VirtualFunctionTable.VFTABLE(
             self.bv,
             vfTable_address,
-            f'{Utils.DemangleName(self.mangled_class_name)}_vfTable'
+            f'{Utils.DemangleName(self.mangled_class_name)}::vfTable'
         )
         if vft.verified:
             self.vTable = vft
