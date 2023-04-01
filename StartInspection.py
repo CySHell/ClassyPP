@@ -45,6 +45,7 @@ class InspectInBackground(bn.BackgroundTaskThread):
             # if GetUserInputs():
             self.RTTI_inspection()
             self.DetectAndVerifyConstructor()
+            self.bv.update_analysis_and_wait()
         except KeyboardInterrupt:
             Utils.LogToFile('Cancelled by user request')
             print('Cancelled by user request')
