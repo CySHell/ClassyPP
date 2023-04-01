@@ -42,9 +42,9 @@ class InspectInBackground(bn.BackgroundTaskThread):
 
     def run(self):
         try:
-            if GetUserInputs():
-                self.RTTI_inspection()
-                self.DetectAndVerifyConstructor()
+            # if GetUserInputs():
+            self.RTTI_inspection()
+            self.DetectAndVerifyConstructor()
         except KeyboardInterrupt:
             Utils.LogToFile('Cancelled by user request')
             print('Cancelled by user request')
