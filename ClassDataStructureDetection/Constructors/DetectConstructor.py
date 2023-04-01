@@ -189,4 +189,4 @@ def ChangeFuncName(bv: bn.binaryview, constructor_addr: int, found_constructors:
         func = bv.create_user_function(constructor_addr)
         print(f'Defined new constructor at {hex(constructor_addr)}')
         bv.update_analysis_and_wait()
-    func.name = f"{class_name}::{func_type}_{found_constructors}"
+    func.name = f"{class_name}::{func_type}{found_constructors}"
