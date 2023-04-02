@@ -91,6 +91,7 @@ This module is responsible for defining the RTTI types defined in rttidata.h hea
 import binaryninja as bn
 from ..Common import Utils
 
+void_ptr_type = None
 
 def Define_TypeDescriptor(bv: bn.binaryview, extra_bytes: int = 0) -> bool:
     """
@@ -99,12 +100,16 @@ def Define_TypeDescriptor(bv: bn.binaryview, extra_bytes: int = 0) -> bool:
     :return:
     """
     try:
+        global void_ptr_type
+        if void_ptr_type is None:
+            void_ptr_type = bv.parse_type_string("void*")[0]
+        
         TypeDescriptor = bn.types.Type.structure(
             members=[
                 # Field overloaded by RTTI
-                (bv.parse_type_string("void*")[0], 'pVFTable'),
+                (void_ptr_type, 'pVFTable'),
                 # reserved, possible for RTTI
-                (bv.parse_type_string("void*")[0], 'spare'),
+                (void_ptr_type, 'spare'),
                 # The decorated name of the type; 0 terminated.
                 (bv.parse_type_string(f"char[{extra_bytes}]")[0], 'name'),
             ],

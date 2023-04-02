@@ -1,3 +1,4 @@
+import cProfile
 import pprint
 import binaryninja as bn
 from .RttiInformation.ClassContext import GlobalClassContextManager
@@ -41,8 +42,13 @@ class InspectInBackground(bn.BackgroundTaskThread):
         self.bv = bv
 
     def run(self):
+        cProfile.runctx('self.run_stub()', globals(), locals(), "C:\\xd.txt")
+        
+    def run_stub(self):
         try:
             # if GetUserInputs():
+            if Config.ENABLE_LOGGING or Config.ENABLE_DEBUG_LOGGING:
+                Utils.logging_file = Utils.GetLogfileHandle()
             self.RTTI_inspection()
             self.DetectAndVerifyConstructor()
             self.bv.update_analysis_and_wait()

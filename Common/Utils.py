@@ -28,6 +28,7 @@ def GetBaseOfFileContainingAddress(bv: BinaryView, addr: int) -> int:
 cached_mangle_dict = {}
 
 def DemangleName(mangled_name: str) -> str:
+    global cached_mangle_dict
     if mangled_name in cached_mangle_dict.keys():
         return cached_mangle_dict[mangled_name]
     else:

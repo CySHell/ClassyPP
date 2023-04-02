@@ -75,8 +75,14 @@ def DetectVTables(bv: BinaryView, bt: bn.BackgroundTask):
                     if vtable.verified:
                         DetectConstructor.DefineConstructor(bv, potential_constructors, suspected_vtable, class_name)
 
+    thunks = DetectConstructor.GetConstructorThunks(bv, DetectConstructor.global_constructor_destructor_list)
+    
+    DetectConstructor.DefineConstructorThunks(bv, thunks)
+
     # TODO : add information of base classes according to non 0x0 offset assignments.
 
+
+void_ptr_type = None
 
 class VFTABLE:
 
@@ -88,30 +94,6 @@ class VFTABLE:
         self.demangled_name: str = demangled_name[6:] if demangled_name.startswith("class ") else demangled_name
         self.contained_functions: List[int] = list()
         self.verified = self.VerifyVFT()
-
-    def RenameVFunc(self, entry: int):
-        if data_var := self.bv.get_data_var_at(entry):
-            if isinstance(data_var, DataVariable):
-                addr = data_var.value
-                
-                if func := self.bv.get_function_at(addr):
-                    if isinstance(func, Function):
-                        refs = 0
-                        for ref in self.bv.get_data_refs(addr):
-                            refs += 1
-                        print(f"checking xrefs to vtable entry at {hex(addr)}: has {refs} refs")
-                        
-                        if refs == 1:
-                            name = self.demangled_name.replace("_vfTable", "")
-                            print(f"Found lonely member function in {name}, vtable at {hex(self.base_addr)}")
-                            if Config.CONSTRUCTOR_FUNCTION_HANDLING == 0:
-                                self.bv.set_comment_at(addr, f"Member of class {name}, virtual table at {hex(self.base_addr)}")
-                            if Config.CONSTRUCTOR_FUNCTION_HANDLING == 1:
-                                func = self.bv.get_function_at(data_var.value)
-                                if not func:
-                                    func = self.bv.create_user_function(addr)
-                                    self.bv.update_analysis_and_wait()
-                                func.name = f"{name}::{func.name}"
 
     def VerifyVFT(self) -> bool:
         data_refs_from_base_addr = list(self.bv.get_data_refs_from(self.base_addr))
@@ -163,7 +145,10 @@ class VFTABLE:
             return False
 
     def GetBinjaVoidPointerType(self) -> bn.types.PointerType:
-        return bn.Type.pointer(self.bv.arch, self.bv.parse_type_string("void")[0])
+        global void_ptr_type
+        if void_ptr_type is None:
+            void_ptr_type = bn.Type.pointer(self.bv.arch, self.bv.parse_type_string("void")[0])
+        return void_ptr_type
 
     def GetPointer(self, pointer_addr: int) -> Optional[bn.DataVariable]:
         # Sometimes binja parses PDB information incorrectly, and instead of a pointer to a vTable

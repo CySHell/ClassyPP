@@ -1,3 +1,4 @@
+from re import I
 import binaryninja as bn
 from typing import *
 from ... import Config
@@ -88,21 +89,20 @@ def GetThisClassVirtualTableAssignmentInstruction(func: bn.function.Function) ->
     else:
         return None
 
-
-def GetPotentialConstructors(bv: bn.binaryview, vfTable_addr: int) -> \
+def GetPotentialConstructors(bv: bn.BinaryView, vfTable_addr: int) -> \
         List[bn.function.Function]:
     # Each function that references the vfTable address has the potential to be the constructor function.
     # MSVC does not place the constructor (at least for 99% of use cases) address inside the vfTable, we can
     # infer that if a function references the vfTable but is contained within the table then it is not a constructor
     # and probably is a destructor.
     # TODO: Try to define destructors as well.
-    potential_constructors: List[bn.function.Function] = []
+    potential_constructors: List[bn.Function] = []
     for code_ref in bv.get_code_refs(vfTable_addr):
         func_containing_code_ref = code_ref.function
         if func_containing_code_ref.start not in VirtualFunctionTable.global_functions_contained_in_all_vfTables:
             potential_constructors.append(func_containing_code_ref)
+            
     return potential_constructors
-
 
 def DetectConstructorForVTable(bv: bn.binaryview, vfTable_addr: int) -> list[bn.function.Function]:
     potential_constructors: List[bn.function.Function] = list()
@@ -125,7 +125,6 @@ def IsDestructor(bv: bn.binaryview, potential_destructor: bn.function.Function) 
                 return True
     return False
 
-
 def DefineConstructor(bv: bn.binaryview, potential_constructors: list[bn.function.Function],
                       vtable_addr: int, class_name=None) -> bool:
     # Since several constructors with the same name (but different signature) may exist, we
@@ -134,7 +133,7 @@ def DefineConstructor(bv: bn.binaryview, potential_constructors: list[bn.functio
     if not class_name:
         class_name: str = bv.get_data_var_at(vtable_addr).name
     if class_name:
-        class_name.replace("_vfTable", "")
+        class_name = class_name.replace("::vfTable", "")
         for constructor in potential_constructors:
             func_type = "Constructor"
             if IsDestructor(bv, constructor):
@@ -153,7 +152,6 @@ def DefineConstructor(bv: bn.binaryview, potential_constructors: list[bn.functio
         return True
     else:
         print(f"DefineConstructor: Cannot get class name for vtable at {hex(vtable_addr)}")
-
 
 def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Function) -> bool:
     # The heuristics used here will locate both the constructors and destructors.
@@ -190,4 +188,53 @@ def ChangeFuncName(bv: bn.binaryview, constructor_addr: int, found_constructors:
         func = bv.create_user_function(constructor_addr)
         print(f'Defined new constructor at {hex(constructor_addr)}')
         bv.update_analysis_and_wait()
-    func.name = f"{class_name}::{func_type}{found_constructors}"
+    func.name = f"{class_name}::{func_type}{found_constructors:02}"
+
+def IsThunkTo(bv: bn.BinaryView, thunk: bn.Function, constructor: bn.Function) -> bool:
+    instr = list(thunk.mlil.instructions)[0]
+    if isinstance(instr, bn.MediumLevelILInstruction) and instr.operation == bn.MediumLevelILOperation.MLIL_TAILCALL and isinstance(instr.dest, bn.MediumLevelILConstPtr) and instr.dest.constant == constructor.start:
+        return True
+    
+    return False
+
+def GetConstructorThunks(bv: bn.BinaryView, constructors: List[int]) -> List[Tuple[bn.Function, bn.Function]]:
+    thunks: List[Tuple[bn.Function, bn.Function]] = []
+    for constructor in constructors:
+        for ref in bv.get_code_refs(constructor):
+            constructor_func = bv.get_function_at(constructor)
+            func = ref.function
+            if IsThunkTo(bv, func, constructor_func):
+                print(f"detected thunk at {hex(ref.address)}")
+                thunks.append((func, constructor_func))
+                
+    return thunks
+
+def DefineConstructorThunks(bv: bn.BinaryView, thunks: List[Tuple[bn.Function, bn.Function]]):
+        thunk: bn.Function
+        constructor: bn.Function
+        thunks_defined: dict[bn.Function, int] = {}
+        
+        for (thunk, constructor) in thunks:
+            orig_name = constructor.name
+            
+            name = orig_name.split('::')[::-1][0]
+            
+            if Config.CONSTRUCTOR_FUNCTION_HANDLING == 1:
+                if thunks_defined.get(constructor) is None:
+                    thunks_defined[constructor] = 0
+                    
+                thunk_index = thunks_defined[constructor]
+                
+                name = orig_name.replace(name, f"Thunk{thunk_index:02}To{name}")
+            
+                ChangeThunkName(bv, thunk.start, name)
+                
+                thunks_defined[constructor] += 1
+
+def ChangeThunkName(bv: bn.binaryview, thunk_addr: int, name: str):
+    func = bv.get_function_at(thunk_addr)
+    if not func:
+        func = bv.create_user_function(thunk_addr)
+        print(f'Defined new constructor thunk at {hex(thunk_addr)}')
+        bv.update_analysis_and_wait()
+    func.name = name
