@@ -76,7 +76,7 @@ def RenameFunction(bv: bn.binaryview, vtable_function: int, lca: int, function_i
             func = bv.create_user_function(vtable_function)
             print(f'Defined new function at {hex(vtable_function)}')
             bv.update_analysis_and_wait()
-        if FuncNameNotDefinedByPDB(func) or func.name == new_func_name:
+        if FuncNameNotDefinedByPDB(func) or "::Method" in func.name:
             func.name = new_func_name
         else:
             func.set_comment_at(func.start,new_func_name)
