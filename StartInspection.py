@@ -42,9 +42,9 @@ class InspectInBackground(bn.BackgroundTaskThread):
         self.bv = bv
 
     def run(self):
-        cProfile.runctx('self.run_stub()', globals(), locals(), "C:\\xd.txt")
+    #     cProfile.runctx('self.run_stub()', globals(), locals(), "C:\\xd.txt")
         
-    def run_stub(self):
+    # def run_stub(self):
         try:
             # if GetUserInputs():
             if Config.ENABLE_LOGGING or Config.ENABLE_DEBUG_LOGGING:
