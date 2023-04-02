@@ -71,14 +71,15 @@ def RenameFunction(bv: bn.binaryview, vtable_function: int, lca: int, function_i
     class_name: str = ClassContext.base_class_descriptors[lca]['class_name'].replace("class ", "")
     try:
         func: bn.Function = bv.get_function_at(vtable_function)
+        new_func_name =  f'{class_name}::Method{function_index:03}'
         if not func:
             func = bv.create_user_function(vtable_function)
             print(f'Defined new function at {hex(vtable_function)}')
             bv.update_analysis_and_wait()
-        if FuncNameNotDefinedByPDB(func):
-            func.name = f'{class_name}::Method{function_index:03}'
+        if FuncNameNotDefinedByPDB(func) or func.name == new_func_name:
+            func.name = new_func_name
         else:
-            func.set_comment_at(func.start, f'{class_name}::Method{function_index:03}')
+            func.set_comment_at(func.start,new_func_name)
         return True
     except Exception as e:
         print(f"Unable to rename function {hex(vtable_function)}, got Exception: \n{e}")
