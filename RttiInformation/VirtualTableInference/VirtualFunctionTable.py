@@ -64,7 +64,8 @@ def DetectVTables(bv: BinaryView, bt: bn.BackgroundTask):
                     class_name: str = CppClass.GenerateClassNameFromVtableAddr(suspected_vtable)
                     vtable = VFTABLE(bv, suspected_vtable, class_name)
                     if vtable.verified:
-                        DetectConstructor.DefineConstructor(bv, potential_constructors, suspected_vtable, class_name)
+                        if potential_constructors := DetectConstructor.DetectConstructorForVTable(bv, suspected_vtable):
+                            DetectConstructor.DefineConstructor(bv, potential_constructors, suspected_vtable, class_name)
                 
                 # Check if the last assignment into offset 0 of Arg1 in the constructor func is a vTable.
                 suspected_vtable: int = assignment_instructions[0][-1]
