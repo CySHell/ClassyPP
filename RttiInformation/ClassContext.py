@@ -88,11 +88,15 @@ class GlobalClassContextManager:
             self.pointer_size = Config.PTR_SIZE_X64
 
     def GetCompleteObjectLocator(self, current_address) -> Union[CompleteObjectLocator, None]:
-        Col: CompleteObjectLocator = CompleteObjectLocator(self.bv, current_address)
-        if Col.verified:
-            UpdateCompleteObjectLocatorsList(Col, current_address)
-            return Col
-        else:
+        try:
+            Col: CompleteObjectLocator = CompleteObjectLocator(self.bv, current_address)
+            if Col.verified:
+                UpdateCompleteObjectLocatorsList(Col, current_address)
+                return Col
+            else:
+                return None
+        except Exception as e:
+            Utils.LogToFile(f'Unable to define complete object locator at {current_address:04X}: {e}')
             return None
 
     def DebugPrintCol(self, Col: CompleteObjectLocator, current_address):

@@ -191,7 +191,11 @@ def ChangeFuncName(bv: bn.binaryview, constructor_addr: int, found_constructors:
     func.name = f"{class_name}::{func_type}{found_constructors:02}"
 
 def IsThunkTo(bv: bn.BinaryView, thunk: bn.Function, constructor: bn.Function) -> bool:
-    instr = list(thunk.mlil.instructions)[0]
+    mlil = thunk.mlil
+    if not isinstance(mlil, bn.MediumLevelILFunction):
+        return False
+    
+    instr = list(mlil.instructions)[0]
     if isinstance(instr, bn.MediumLevelILInstruction) and instr.operation == bn.MediumLevelILOperation.MLIL_TAILCALL and isinstance(instr.dest, bn.MediumLevelILConstPtr) and instr.dest.constant == constructor.start:
         return True
     
