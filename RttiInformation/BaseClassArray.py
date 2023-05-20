@@ -48,7 +48,7 @@ class BaseClassArray:
             self.bv.define_user_data_var(self.base_addr,
                                         #  self.bv.parse_type_string(f'int[{self.entry_count}]')[0],
                                         arr_type,
-                                         f'{Utils.DemangleName(self.mangled_class_name)}_BaseClassArray')
+                                         f'{Utils.DemangleName(self.mangled_class_name)}::BaseClassArray')
             Utils.LogToFile(f'BaseClassArray: Defined data var at {hex(self.base_addr)}')
             return True
         except Exception as e:

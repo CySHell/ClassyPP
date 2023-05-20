@@ -9,8 +9,8 @@ STRING_OFFSET_INSIDE_TYPEDESCRIPTOR = 0x10
 
 class BaseClassDescriptor:
 
-    def __init__(self, bv: bn.binaryview, base_addr: int, relative: bool):
-        self.bv: bn.binaryview = bv
+    def __init__(self, bv: bn.BinaryView, base_addr: int, relative: bool):
+        self.bv: bn.BinaryView = bv
         self.base_addr: int = base_addr
         self.class_name = ""
 
@@ -67,8 +67,8 @@ class BaseClassDescriptor:
 
 class BaseClassArray:
 
-    def __init__(self, bv: bn.binaryview, base_addr: int, entry_count: int, relative: bool):
-        self.bv: bn.binaryview = bv
+    def __init__(self, bv: bn.BinaryView, base_addr: int, entry_count: int, relative: bool):
+        self.bv: bn.BinaryView = bv
         self.base_addr: int = base_addr
         self.entry_count = entry_count
         self.relative = relative

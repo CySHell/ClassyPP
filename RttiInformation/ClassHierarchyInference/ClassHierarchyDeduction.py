@@ -67,8 +67,8 @@ def FuncNameNotDefinedByPDB(func: bn.Function) -> bool:
     return func.name.startswith("sub_") or "::" not in func.name
 
 
-def RenameFunction(bv: bn.binaryview, vtable_function: int, lca: int, function_index: int) -> bool:
-    class_name: str = ClassContext.base_class_descriptors[lca]['class_name'].replace("class ", "")
+def RenameFunction(bv: bn.BinaryView, vtable_function: int, lca: int, function_index: int) -> bool:
+    class_name: str = ClassContext.base_class_descriptors[lca]['class_name'] # .replace("class ", "")
     try:
         func: bn.Function = bv.get_function_at(vtable_function)
         new_func_name =  f'{class_name}::Method{function_index:03}'
@@ -86,7 +86,7 @@ def RenameFunction(bv: bn.binaryview, vtable_function: int, lca: int, function_i
         return False
 
 
-def DefinevTableFunctions(bv: bn.binaryview, class_hierarchy_graph: DiGraph):
+def DefinevTableFunctions(bv: bn.BinaryView, class_hierarchy_graph: DiGraph):
     mapped_functions: Dict[int: List[int]] = MapAllVirtualFunctions()
 
     Utils.LogToFile(f'mapped_functions: {mapped_functions}')
@@ -156,7 +156,6 @@ def WriteGraphToFile(graph: DiGraph, gexf=True, graphml=False):
 
 
 def CreateHierarchyGraph() -> nx.DiGraph:
-    print("creating hierarchy graph")
     class_hierarchy_graph: DiGraph = nx.DiGraph()
     resolved_bcd: List[int] = list()
     if CreateAllBaseTypeNodes(class_hierarchy_graph):
@@ -169,5 +168,5 @@ def CreateHierarchyGraph() -> nx.DiGraph:
     return class_hierarchy_graph
 
 
-def DefineClassHierarchy(bv: bn.binaryview):
+def DefineClassHierarchy(bv: bn.BinaryView):
     DefinevTableFunctions(bv, CreateHierarchyGraph())

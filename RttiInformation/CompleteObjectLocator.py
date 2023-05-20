@@ -8,9 +8,9 @@ from typing import *
 
 class CompleteObjectLocator:
 
-    def __init__(self, bv: bn.binaryview, base_addr: int):
+    def __init__(self, bv: bn.BinaryView, base_addr: int):
         self.mangled_class_name = None
-        self.bv: bn.binaryview = bv
+        self.bv: bn.BinaryView = bv
         self.base_addr: int = base_addr
         self.vTable: Optional[VirtualFunctionTable.VFTABLE] = None
         self.class_hierarchy_descriptor_address: int = 0
@@ -87,7 +87,7 @@ class CompleteObjectLocator:
             # Define the Complete object locator
             self.bv.define_user_data_var(self.base_addr,
                                          self.bv.get_type_by_name('RTTICompleteObjectLocator'),
-                                         f'{Utils.DemangleName(self.mangled_class_name)}_CompleteObjectLocator')
+                                         f'{Utils.DemangleName(self.mangled_class_name)}::CompleteObjectLocator')
             Utils.LogToFile(f'CompleteObjectLocator: Defined data var at {hex(self.base_addr)}')
             return True
         except Exception as e:
@@ -159,7 +159,7 @@ class CompleteObjectLocator:
         vft: VirtualFunctionTable.VFTABLE = VirtualFunctionTable.VFTABLE(
             self.bv,
             vfTable_address,
-            f'{Utils.DemangleName(self.mangled_class_name)}::vfTable'
+            f'class {Utils.DemangleName(self.mangled_class_name)}::vfTable'
         )
         if vft.verified:
             self.vTable = vft

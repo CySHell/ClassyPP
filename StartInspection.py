@@ -9,7 +9,7 @@ from .ClassDataStructureDetection.Constructors import DetectConstructor
 from .RttiInformation.VirtualTableInference import VirtualFunctionTable
 
 
-def is_bv_valid_for_plugin(bv: bn.binaryview) -> bool:
+def is_bv_valid_for_plugin(bv: bn.BinaryView) -> bool:
     if bv.arch.name == "x86_64" or bv.arch.name == "x86":
         return True
     else:
@@ -36,25 +36,24 @@ def CleanupPlugin():
 
 class InspectInBackground(bn.BackgroundTaskThread):
 
-    def __init__(self, bv: bn.binaryview):
+    def __init__(self, bv: bn.BinaryView):
         bn.BackgroundTaskThread.__init__(
             self, "ClassyPP - Performing inspection and extraction...", True)
         self.bv = bv
 
     def run(self):
-    #     cProfile.runctx('self.run_stub()', globals(), locals(), "C:\\xd.txt")
-        
-    # def run_stub(self):
         try:
-            # if GetUserInputs():
-            if Config.ENABLE_LOGGING or Config.ENABLE_DEBUG_LOGGING:
-                Utils.logging_file = Utils.GetLogfileHandle()
-            self.RTTI_inspection()
-            self.DetectAndVerifyConstructor()
-            self.bv.update_analysis_and_wait()
+            if GetUserInputs():
+                self.bv.begin_undo_actions()
+                if Config.ENABLE_LOGGING or Config.ENABLE_DEBUG_LOGGING:
+                    Utils.logging_file = Utils.GetLogfileHandle()
+                self.RTTI_inspection()
+                self.DetectAndVerifyConstructor()
+                self.bv.update_analysis_and_wait()
         except KeyboardInterrupt:
             Utils.LogToFile('Cancelled by user request')
             print('Cancelled by user request')
+        self.bv.commit_undo_actions()
         CleanupPlugin()
 
     def DetectAndVerifyConstructor(self):
@@ -80,7 +79,7 @@ class InspectInBackground(bn.BackgroundTaskThread):
         return False
 
 
-def inspect(bv: bn.binaryview):
+def inspect(bv: bn.BinaryView):
     if bv.analysis_info.state != 2:
         print(f'ClassyPP: Binja analysis still ongoing, please run this plugin only after analysis completes.')
     else:

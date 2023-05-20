@@ -102,9 +102,9 @@ def GetPotentialConstructors(bv: bn.BinaryView, vfTable_addr: int) -> \
         if func_containing_code_ref.start not in VirtualFunctionTable.global_functions_contained_in_all_vfTables:
             potential_constructors.append(func_containing_code_ref)
             
-    return potential_constructors
+    return list(dict.fromkeys(potential_constructors))
 
-def DetectConstructorForVTable(bv: bn.binaryview, vfTable_addr: int) -> list[bn.function.Function]:
+def DetectConstructorForVTable(bv: bn.BinaryView, vfTable_addr: int) -> list[bn.function.Function]:
     potential_constructors: List[bn.function.Function] = list()
     for potential_constructor in GetPotentialConstructors(bv, vfTable_addr):
         if VerifyConstructor(bv, potential_constructor):
@@ -114,7 +114,7 @@ def DetectConstructorForVTable(bv: bn.binaryview, vfTable_addr: int) -> list[bn.
     return potential_constructors
 
 
-def IsDestructor(bv: bn.binaryview, potential_destructor: bn.function.Function) -> bool:
+def IsDestructor(bv: bn.BinaryView, potential_destructor: bn.function.Function) -> bool:
     # The heuristic for determining a destructor is very primitive - if it contains the delete or ~ operator in
     # one of the function it calls then we determine its a destructor.
     # TODO: Find a better heuristic for finding destructors.
@@ -125,7 +125,7 @@ def IsDestructor(bv: bn.binaryview, potential_destructor: bn.function.Function) 
                 return True
     return False
 
-def DefineConstructor(bv: bn.binaryview, potential_constructors: list[bn.function.Function],
+def DefineConstructor(bv: bn.BinaryView, potential_constructors: list[bn.function.Function],
                       vtable_addr: int, class_name=None) -> bool:
     # Since several constructors with the same name (but different signature) may exist, we
     # will attach a postfix index to each of the names.
@@ -133,7 +133,7 @@ def DefineConstructor(bv: bn.binaryview, potential_constructors: list[bn.functio
     if not class_name:
         class_name: str = bv.get_data_var_at(vtable_addr).name
     if class_name:
-        class_name = class_name.replace("::vfTable", "")
+        class_name = class_name.replace("::vfTable", "").replace("class ", "")
         for constructor in potential_constructors:
             func_type = "Constructor"
             if IsDestructor(bv, constructor):
@@ -153,7 +153,7 @@ def DefineConstructor(bv: bn.binaryview, potential_constructors: list[bn.functio
     else:
         print(f"DefineConstructor: Cannot get class name for vtable at {hex(vtable_addr)}")
 
-def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Function) -> bool:
+def VerifyConstructor(bv: bn.BinaryView, potential_constructor: bn.function.Function) -> bool:
     # The heuristics used here will locate both the constructors and destructors.
     # It is not easy to automatically distinguish between the two.
 
@@ -176,12 +176,12 @@ def VerifyConstructor(bv: bn.binaryview, potential_constructor: bn.function.Func
         return False
 
 
-def AddComment(bv: bn.binaryview, constructor_addr: int, vtable_addr: int, class_name: str, func_type: str):
+def AddComment(bv: bn.BinaryView, constructor_addr: int, vtable_addr: int, class_name: str, func_type: str):
     bv.set_comment_at(constructor_addr, f"Suspected {func_type} function for class {class_name}, virtual table"
                                         f" at {hex(vtable_addr)}")
 
 
-def ChangeFuncName(bv: bn.binaryview, constructor_addr: int, found_constructors: int, class_name: str,
+def ChangeFuncName(bv: bn.BinaryView, constructor_addr: int, found_constructors: int, class_name: str,
                    func_type: str):
     func = bv.get_function_at(constructor_addr)
     if not func:
@@ -235,7 +235,7 @@ def DefineConstructorThunks(bv: bn.BinaryView, thunks: List[Tuple[bn.Function, b
                 
                 thunks_defined[constructor] += 1
 
-def ChangeThunkName(bv: bn.binaryview, thunk_addr: int, name: str):
+def ChangeThunkName(bv: bn.BinaryView, thunk_addr: int, name: str):
     func = bv.get_function_at(thunk_addr)
     if not func:
         func = bv.create_user_function(thunk_addr)
