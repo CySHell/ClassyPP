@@ -9,8 +9,8 @@ from .. import Config
 
 class BaseClassDescriptor:
 
-    def __init__(self, bv: bn.binaryview, base_addr: int):
-        self.bv: bn.binaryview = bv
+    def __init__(self, bv: bn.BinaryView, base_addr: int):
+        self.bv: bn.BinaryView = bv
         self.base_addr: int = base_addr
 
         # Type descriptor of the base class.
@@ -112,7 +112,7 @@ class BaseClassDescriptor:
         try:
             self.bv.define_user_data_var(self.base_addr,
                                          self.bv.get_type_by_name(f'RTTIBaseClassDescriptor'),
-                                         f'{self.demangled_class_name}_BaseClassDescriptor')
+                                         f'{self.demangled_class_name}::BaseClassDescriptor')
 
             self.bv.define_user_data_var(self.pTypeDescriptor,
                                          self.bv.get_type_by_name(f'TypeDescriptor'),

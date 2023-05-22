@@ -6,10 +6,10 @@ from ..Common import Utils
 
 class ClassHierarchyDescriptor:
 
-    def __init__(self, bv: bn.binaryview, base_addr: int, mangled_class_name: str):
+    def __init__(self, bv: bn.BinaryView, base_addr: int, mangled_class_name: str):
         Utils.LogToFile(f'Attempt to define {mangled_class_name} CHD at base_addr {base_addr}')
         self.base_class_array = None
-        self.bv: bn.binaryview = bv
+        self.bv: bn.BinaryView = bv
         self.base_addr: int = base_addr
         self.mangled_class_name: str = mangled_class_name
         self.demangled_class_name: str = Utils.DemangleName(self.mangled_class_name)
@@ -99,7 +99,7 @@ class ClassHierarchyDescriptor:
         try:
             self.bv.define_user_data_var(self.base_addr,
                                          self.bv.get_type_by_name('RTTIClassHierarchyDescriptor'),
-                                         f'{self.demangled_class_name}_ClassHierarchyDescriptor')
+                                         f'{self.demangled_class_name}::ClassHierarchyDescriptor')
             Utils.LogToFile(f'ClassHierarchyDescriptor: Defined data var at {hex(self.base_addr)}')
             return True
         except Exception as e:

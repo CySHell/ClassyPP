@@ -1,3 +1,4 @@
+import cProfile
 import pprint
 import binaryninja as bn
 from .RttiInformation.ClassContext import GlobalClassContextManager
@@ -8,7 +9,7 @@ from .ClassDataStructureDetection.Constructors import DetectConstructor
 from .RttiInformation.VirtualTableInference import VirtualFunctionTable
 
 
-def is_bv_valid_for_plugin(bv: bn.binaryview) -> bool:
+def is_bv_valid_for_plugin(bv: bn.BinaryView) -> bool:
     if bv.arch.name == "x86_64" or bv.arch.name == "x86":
         return True
     else:
@@ -35,14 +36,24 @@ def CleanupPlugin():
 
 class InspectInBackground(bn.BackgroundTaskThread):
 
-    def __init__(self, bv: bn.binaryview):
-        bn.BackgroundTaskThread.__init__(self, "ClassyPP - Performing inspection and extraction...", True)
+    def __init__(self, bv: bn.BinaryView):
+        bn.BackgroundTaskThread.__init__(
+            self, "ClassyPP - Performing inspection and extraction...", True)
         self.bv = bv
 
     def run(self):
-        if GetUserInputs():
-            self.RTTI_inspection()
-            self.DetectAndVerifyConstructor()
+        try:
+            if GetUserInputs():
+                self.bv.begin_undo_actions()
+                if Config.ENABLE_LOGGING or Config.ENABLE_DEBUG_LOGGING:
+                    Utils.logging_file = Utils.GetLogfileHandle()
+                self.RTTI_inspection()
+                self.DetectAndVerifyConstructor()
+                self.bv.update_analysis_and_wait()
+        except KeyboardInterrupt:
+            Utils.LogToFile('Cancelled by user request')
+            print('Cancelled by user request')
+        self.bv.commit_undo_actions()
         CleanupPlugin()
 
     def DetectAndVerifyConstructor(self):
@@ -50,12 +61,13 @@ class InspectInBackground(bn.BackgroundTaskThread):
             # Iterate over all found vfTables and detect their constructors
             print(f'ClassyPP: Constructor Detection process started...')
             Utils.LogToFile(str(VirtualFunctionTable.global_vfTables))
-            VirtualFunctionTable.DetectVTables(self.bv)
+            VirtualFunctionTable.DetectVTables(self.bv, self)
 
     def RTTI_inspection(self) -> bool:
         Utils.LogToFile(f'inspect: Starting Scan.')
         if TypeCreation.CreateTypes(self.bv):
-            GCM: GlobalClassContextManager = GlobalClassContextManager(self.bv)
+            GCM: GlobalClassContextManager = GlobalClassContextManager(
+                self.bv, self)
             if GCM.DetectAndDefineAllInformation():
                 Utils.LogToFile(f'ClassyPP: Successfully created types.')
                 print(f'ClassyPP: Successfully defined RTTI Information.')
@@ -67,7 +79,7 @@ class InspectInBackground(bn.BackgroundTaskThread):
         return False
 
 
-def inspect(bv: bn.binaryview):
+def inspect(bv: bn.BinaryView):
     if bv.analysis_info.state != 2:
         print(f'ClassyPP: Binja analysis still ongoing, please run this plugin only after analysis completes.')
     else:

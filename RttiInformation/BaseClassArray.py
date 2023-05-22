@@ -2,12 +2,14 @@ import binaryninja as bn
 from typing import *
 from .BaseClassDescriptor import BaseClassDescriptor
 from ..Common import Utils
+from binaryninja.types import Type
+from binaryninja.binaryview import BinaryView
 
 
 class BaseClassArray:
 
-    def __init__(self, bv: bn.binaryview, base_addr: int, entry_count: int, mangled_class_name: str):
-        self.bv: bn.binaryview = bv
+    def __init__(self, bv: BinaryView, base_addr: int, entry_count: int, mangled_class_name: str):
+        self.bv: BinaryView = bv
         self.base_addr: int = base_addr
         self.mangled_class_name: str = mangled_class_name
         self.entry_count = entry_count
@@ -42,9 +44,11 @@ class BaseClassArray:
     def DefineDataVar(self) -> bool:
         Utils.LogToFile(f'BaseClassArray: Attempt to define data var at {hex(self.base_addr)}')
         try:
+            arr_type = Type.array(Type.int(4), self.entry_count)
             self.bv.define_user_data_var(self.base_addr,
-                                         self.bv.parse_type_string(f'int[{self.entry_count}]')[0],
-                                         f'{Utils.DemangleName(self.mangled_class_name)}_BaseClassArray')
+                                        #  self.bv.parse_type_string(f'int[{self.entry_count}]')[0],
+                                        arr_type,
+                                         f'{Utils.DemangleName(self.mangled_class_name)}::BaseClassArray')
             Utils.LogToFile(f'BaseClassArray: Defined data var at {hex(self.base_addr)}')
             return True
         except Exception as e:

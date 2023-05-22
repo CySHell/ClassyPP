@@ -1,4 +1,7 @@
+from binaryninja.function import Function
+from binaryninja.binaryview import BinaryView, DataVariable
 import binaryninja as bn
+from ... import Config
 from ...ClassDataStructureDetection.Constructors import DetectConstructor
 from ...ClassObjectRepresentation import CppClass
 from ...Common import Utils
@@ -9,7 +12,7 @@ global_vfTables: Dict[int, List[int]] = dict()
 global_functions_contained_in_all_vfTables: List[int] = list()
 
 
-def VerifyNonRttiVtable(bv: bn.binaryview, potential_vtable_addr: int) -> bool:
+def VerifyNonRttiVtable(bv: BinaryView, potential_vtable_addr: int) -> bool:
     if potential_vtable_addr in global_vfTables.keys():
         return True
     else:
@@ -21,7 +24,7 @@ def VerifyNonRttiVtable(bv: bn.binaryview, potential_vtable_addr: int) -> bool:
     return False
 
 
-def DetectVTables(bv: bn.binaryview):
+def DetectVTables(bv: BinaryView, bt: bn.BackgroundTask):
     """
     The general algorithm of this function is this:
     1. Go over all recognized functions in the binaryView.
@@ -40,8 +43,11 @@ def DetectVTables(bv: bn.binaryview):
         correct class.
     """
     print("Searching for vTables...")
+    
     # First, we go over the known vfTables (As inferred from RTTI info) and locate their constructors.
     for vtable_addr, contained_functions in global_vfTables.items():
+        if bt.cancelled:
+            raise KeyboardInterrupt()
         if potential_constructors := DetectConstructor.DetectConstructorForVTable(bv, vtable_addr):
             DetectConstructor.DefineConstructor(bv, potential_constructors, vtable_addr)
     for func in bv.functions:
@@ -51,6 +57,16 @@ def DetectVTables(bv: bn.binaryview):
                 # VerifyConstructor will check that there is a pointer assignment into offset 0x0
                 # in the "This" pointer (Arg1). Now we need to check if this pointer is a vTable.
                 assignment_instructions = DetectConstructor.GetAllAssignmentInstructions(func)
+                
+                # NOTE(unknowntrojan) check all assignments to *this for constructors.
+                # NOTE(unknowntrojan) this may be slow, but so is this entire script.
+                # for suspected_vtable in assignment_instructions[0]:
+                #     class_name: str = CppClass.GenerateClassNameFromVtableAddr(suspected_vtable)
+                #     vtable = VFTABLE(bv, suspected_vtable, class_name)
+                #     if vtable.verified:
+                #         if potential_constructors := DetectConstructor.DetectConstructorForVTable(bv, suspected_vtable):
+                #             DetectConstructor.DefineConstructor(bv, potential_constructors, suspected_vtable, class_name)
+                
                 # Check if the last assignment into offset 0 of Arg1 in the constructor func is a vTable.
                 suspected_vtable: int = assignment_instructions[0][-1]
                 print(f"Found non RTTI vtable at {hex(suspected_vtable)}")
@@ -60,13 +76,19 @@ def DetectVTables(bv: bn.binaryview):
                     if vtable.verified:
                         DetectConstructor.DefineConstructor(bv, potential_constructors, suspected_vtable, class_name)
 
+    thunks = DetectConstructor.GetConstructorThunks(bv, DetectConstructor.global_constructor_destructor_list)
+    
+    DetectConstructor.DefineConstructorThunks(bv, thunks)
+
     # TODO : add information of base classes according to non 0x0 offset assignments.
 
 
+void_ptr_type = None
+
 class VFTABLE:
 
-    def __init__(self, bv: bn.binaryview, base_addr: int, demangled_name: str):
-        self.bv: bn.binaryview = bv
+    def __init__(self, bv: BinaryView, base_addr: int, demangled_name: str):
+        self.bv: BinaryView = bv
         self.base_addr: int = base_addr
         self.vfTable_length: int = 0
         # Strip the "class " from the start of the demangled name.
@@ -106,6 +128,8 @@ class VFTABLE:
         current_data_var_addr: int = self.base_addr
         while self.IsPointerToFunction(current_data_var_addr):
             self.vfTable_length += 1
+            # NOTE(unknowntrojan) i implemented this, and then noticed it was in ClassyPP all along, just disabled.
+            # self.RenameVFunc(current_data_var_addr)
             current_data_var_addr += 0x8 if self.bv.arch.name == "x86_64" else 0x4
         if self.vfTable_length > 0:
             try:
@@ -122,7 +146,10 @@ class VFTABLE:
             return False
 
     def GetBinjaVoidPointerType(self) -> bn.types.PointerType:
-        return bn.Type.pointer(self.bv.arch, self.bv.parse_type_string("void")[0])
+        global void_ptr_type
+        if void_ptr_type is None:
+            void_ptr_type = bn.Type.pointer(self.bv.arch, self.bv.parse_type_string("void")[0])
+        return void_ptr_type
 
     def GetPointer(self, pointer_addr: int) -> Optional[bn.DataVariable]:
         # Sometimes binja parses PDB information incorrectly, and instead of a pointer to a vTable
@@ -150,15 +177,16 @@ class VFTABLE:
     def IsPointerToFunction(self, pointer_addr: int) -> bool:
         try:
             if pointer := self.GetPointer(pointer_addr):
-                if self.bv.get_sections_at(pointer.value)[0].semantics is \
-                        bn.SectionSemantics.ReadOnlyCodeSectionSemantics:
-                    if not self.bv.get_function_at(pointer.value):
-                        self.bv.add_function(pointer.value)
-                    self.contained_functions.append(pointer.value)
-                    return True
+                if segment := self.bv.get_segment_at(pointer.value):
+                    if segment.executable:
+                        if not self.bv.get_function_at(pointer.value):
+                            self.bv.add_function(pointer.value)
+                        self.contained_functions.append(pointer.value)
+                        return True
         except Exception as e:
-            Utils.LogToFile(f"IsPointerToFunction: Failed to determine if pointer to function at {pointer_addr}.\n"
+            Utils.LogToFile(f"IsPointerToFunction: Failed to determine if pointer to function at {hex(pointer_addr)}.\n"
                             f"Exception: {e}")
+            
         return False
 
     def GetLength(self):

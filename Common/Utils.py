@@ -1,14 +1,20 @@
 import subprocess
 from os.path import exists
 import os
-import binaryninja as bn
 from .. import Config
+from binaryninja.binaryview import BinaryView
+import binaryninja as bn
 
 
-def GetBaseOfFileContainingAddress(bv: bn.binaryninja.binaryview.BinaryView, addr: int) -> int:
+def GetBaseOfFileContainingAddress(bv: BinaryView, addr: int) -> int:
     # When loading other files, such as dlls, into the memory space of the current bv we need
     # to determine the base of the file in order to calculate relative addresses.
-    section_name: str = bv.get_sections_at(addr)[0].name
+    sections = bv.get_sections_at(addr) 
+    
+    if len(sections) < 1:
+        return bv.start
+    
+    section_name: str = sections[0].name
     base_file_name_array = section_name.split(".")
     base_file_name = base_file_name_array[0]
 
@@ -19,9 +25,13 @@ def GetBaseOfFileContainingAddress(bv: bn.binaryninja.binaryview.BinaryView, add
     else:
         return bv.start
 
+cached_mangle_dict = {}
 
 def DemangleName(mangled_name: str) -> str:
-    try:
+    global cached_mangle_dict
+    if mangled_name in cached_mangle_dict.keys():
+        return cached_mangle_dict[mangled_name]
+    else:
         if os.name == 'nt':
             CREATE_NO_WINDOW = 0x08000000
             demangled_name = subprocess.check_output(
@@ -29,17 +39,19 @@ def DemangleName(mangled_name: str) -> str:
         else:
             demangled_name = subprocess.check_output(
                 [Config.DEMANGLER_FULL_PATH, mangled_name])
+
         # Linux returns demangled_name as a bytes object, need to convert to string.
         if type(demangled_name) != str:
             demangled_name = demangled_name.decode()
-    except subprocess.CalledProcessError:
-        return mangled_name
 
-    # Sometimes classes that use lambda functions cannot be parsed correctly and we get this error msg.
-    if demangled_name.startswith('The system cannot find the file specified'):
-        return mangled_name
-    else:
-        return demangled_name.split(" `RTTI")[0]
+        # Sometimes classes that use lambda functions cannot be parsed correctly and we get this error msg.
+        if demangled_name.startswith('The system cannot find the file specified'):
+            cached_mangle_dict[mangled_name] = mangled_name
+            return mangled_name
+        else:
+            demangled_name = demangled_name.split(" `RTTI")[0]
+            cached_mangle_dict[mangled_name] = demangled_name
+            return demangled_name
 
 
 ############################################################################################

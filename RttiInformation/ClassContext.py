@@ -1,5 +1,7 @@
-import binaryninja as bn
 from typing import *
+from binaryninja.binaryview import Segment, Section, SectionSemantics, BinaryView
+from binaryninja.plugin import BackgroundTask
+from binaryninja.architecture import Architecture
 import json
 from .CompleteObjectLocator import CompleteObjectLocator
 from .ClassHierarchyInference import ClassHierarchyDeduction
@@ -47,10 +49,13 @@ def RecordAllInformationToFile():
         pass
 
 
-def IsSectionCompatibleToRTTI(section: bn.binaryview.Section) -> bn.binaryview.SectionSemantics:
-    return section.semantics is bn.SectionSemantics.ReadWriteDataSectionSemantics or \
-           section.semantics is bn.SectionSemantics.ReadOnlyDataSectionSemantics
+def IsSectionCompatibleToRTTI(section: Section) -> bool:
+    return section.semantics is SectionSemantics.ReadWriteDataSectionSemantics or \
+           section.semantics is SectionSemantics.ReadOnlyDataSectionSemantics
 
+
+def IsSegmentCompatibleToRTTI(segment: Segment) -> bool:
+    return segment.readable and not segment.executable
 
 class GlobalClassContextManager:
     """
@@ -58,17 +63,20 @@ class GlobalClassContextManager:
     and attempt to accurately define the different classes found.
     """
 
-    def __init__(self, bv: bn.binaryview):
-        self.pointer_size = None
-        self.int_size = None
-        self.rtti_complete_object_locator_size = None
-        self.name_string_offset_inside_typedescriptor = None
-        self.bv: bn.binaryview = bv
+    def __init__(self, bv: BinaryView, bt: BackgroundTask):
+        self.pointer_size = 0
+        self.int_size = 0
+        self.rtti_complete_object_locator_size = 0
+        self.name_string_offset_inside_typedescriptor = 0
+        self.bv: BinaryView = bv
+        self.bt: BackgroundTask = bt
 
         self.Define32or64BitConstants()
 
     def Define32or64BitConstants(self):
-        if self.bv.arch.name == 'x86':
+        arch = self.bv.arch
+        assert isinstance(arch, Architecture)
+        if arch.name == 'x86':
             self.name_string_offset_inside_typedescriptor = Config.NAME_STRING_OFFSET_INSIDE_TYPEDESCRIPTOR_X32
             self.rtti_complete_object_locator_size = Config.RTTI_COMPLETE_OBJECT_LOCATOR_SIZE_X32
             self.int_size = Config.INT_SIZE_X32
@@ -80,10 +88,15 @@ class GlobalClassContextManager:
             self.pointer_size = Config.PTR_SIZE_X64
 
     def GetCompleteObjectLocator(self, current_address) -> Union[CompleteObjectLocator, None]:
-        Col: CompleteObjectLocator = CompleteObjectLocator(self.bv, current_address)
-        if Col.verified:
-            return Col
-        else:
+        try:
+            Col: CompleteObjectLocator = CompleteObjectLocator(self.bv, current_address)
+            if Col.verified:
+                UpdateCompleteObjectLocatorsList(Col, current_address)
+                return Col
+            else:
+                return None
+        except Exception as e:
+            Utils.LogToFile(f'Unable to define complete object locator at {current_address:04X}: {e}')
             return None
 
     def DebugPrintCol(self, Col: CompleteObjectLocator, current_address):
@@ -107,20 +120,28 @@ class GlobalClassContextManager:
         ClassHierarchyDeduction.DefineClassHierarchy(self.bv)
 
     def DetectAndDefineAllInformation(self) -> bool:
-        for sect in self.bv.sections.values():
-            if IsSectionCompatibleToRTTI(sect):
-                current_address = sect.start
-                while current_address < sect.end - self.rtti_complete_object_locator_size:
+        for seg in self.bv.segments:
+            if IsSegmentCompatibleToRTTI(seg):
+                # Find start of next possible position of a complete
+                # object locator by searching for the signature.
+                arch = self.bv.arch
+                assert isinstance(arch, Architecture)
+                if arch.name == 'x86_64':
+                    signature = b'\x01\x00\x00\x00'
+                else:
+                    signature = b'\x00\x00\x00\x00'
+                for (current_address, _) in self.bv.find_all_data(
+                    seg.start,
+                    seg.end - self.rtti_complete_object_locator_size,
+                        signature):
+                    if self.bt.cancelled:
+                        raise KeyboardInterrupt()
                     if Col := self.GetCompleteObjectLocator(current_address):
                         Utils.LogToFile(f'Defined {Col.__repr__()} \n')
-                        print(f"Defined Class: {Utils.DemangleName(Col.mangled_class_name)}")
+                        print(
+                            f"Defined Class: {Utils.DemangleName(Col.mangled_class_name)}")
                         if Config.ENABLE_DEBUG_LOGGING:
                             self.DebugPrintCol(Col, current_address)
-
-                        current_address += self.rtti_complete_object_locator_size
-                    else:
-                        # A Col will be 4 bytes aligned
-                        current_address += 4
         # TODO: Define condition for this function to fail.
 
         self.DeduceClassHierarchies()

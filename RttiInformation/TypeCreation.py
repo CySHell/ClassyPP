@@ -91,20 +91,25 @@ This module is responsible for defining the RTTI types defined in rttidata.h hea
 import binaryninja as bn
 from ..Common import Utils
 
+void_ptr_type = None
 
-def Define_TypeDescriptor(bv: bn.binaryview, extra_bytes: int = 0) -> bool:
+def Define_TypeDescriptor(bv: bn.BinaryView, extra_bytes: int = 0) -> bool:
     """
     :param bv:
     :param extra_bytes: This is the size of the char[] in the 'name' parameter of the descriptor.
     :return:
     """
     try:
+        global void_ptr_type
+        if void_ptr_type is None:
+            void_ptr_type = bv.parse_type_string("void*")[0]
+        
         TypeDescriptor = bn.types.Type.structure(
             members=[
                 # Field overloaded by RTTI
-                (bv.parse_type_string("void*")[0], 'pVFTable'),
+                (void_ptr_type, 'pVFTable'),
                 # reserved, possible for RTTI
-                (bv.parse_type_string("void*")[0], 'spare'),
+                (void_ptr_type, 'spare'),
                 # The decorated name of the type; 0 terminated.
                 (bv.parse_type_string(f"char[{extra_bytes}]")[0], 'name'),
             ],
@@ -120,7 +125,7 @@ def Define_TypeDescriptor(bv: bn.binaryview, extra_bytes: int = 0) -> bool:
         return False
 
 
-def Define_RTTIClassHierarchyDescriptor(bv: bn.binaryview):
+def Define_RTTIClassHierarchyDescriptor(bv: bn.BinaryView):
     try:
         if Define_TypeDescriptor(bv):
             ################################
@@ -145,7 +150,7 @@ def Define_RTTIClassHierarchyDescriptor(bv: bn.binaryview):
     return False
 
 
-def Define_RTTIBaseClassDescriptor(bv: bn.binaryview) -> bool:
+def Define_RTTIBaseClassDescriptor(bv: bn.BinaryView) -> bool:
     try:
         if Define_TypeDescriptor(bv) and Define_RTTIClassHierarchyDescriptor(bv):
             ################################
@@ -176,7 +181,7 @@ def Define_RTTIBaseClassDescriptor(bv: bn.binaryview) -> bool:
         return False
 
 
-def Define_RTTICompleteObjectLocator(bv: bn.binaryview):
+def Define_RTTICompleteObjectLocator(bv: bn.BinaryView):
     try:
         if bv.arch.name == "x86_64":
             _RTTICompleteObjectLocator_relative = bn.types.Type.structure(
@@ -218,7 +223,7 @@ def Define_RTTICompleteObjectLocator(bv: bn.binaryview):
         return False
 
 
-def IsDefined(bv: bn.binaryview) -> bool:
+def IsDefined(bv: bn.BinaryView) -> bool:
     """
     Check if the needed types already defined in the bv.
     :return: True if NOT defined, else False.
@@ -227,7 +232,7 @@ def IsDefined(bv: bn.binaryview) -> bool:
            bv.get_type_by_name("RTTICompleteObjectLocator")
 
 
-def CreateTypes(bv: bn.binaryview) -> bool:
+def CreateTypes(bv: bn.BinaryView) -> bool:
     if IsDefined(bv):
         Utils.LogToFile(f'CreateTypes: Types already defined in this BinaryView.')
         return True

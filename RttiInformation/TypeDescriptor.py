@@ -4,8 +4,8 @@ from ..Common import Utils
 
 class TypeDescriptor:
 
-    def __init__(self, bv: bn.binaryview, addr: int):
-        self.bv: bn.binaryview = bv
+    def __init__(self, bv: bn.BinaryView, addr: int):
+        self.bv: bn.BinaryView = bv
         # Base address of the type descriptor
         self.base_addr: int = addr
         # Always points to type_info's vfTable

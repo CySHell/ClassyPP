@@ -4,7 +4,7 @@ from ...Common import Utils
 from typing import *
 
 
-def CreateClass(bv: bn.binaryview, class_name: str) -> Optional[str]:
+def CreateClass(bv: bn.BinaryView, class_name: str) -> Optional[str]:
     """
     :param bv: BinaryView to define this class struct in.
     :param class_name: The format of the Class name *** MUST BE *** the format extracted using the demangler in the
