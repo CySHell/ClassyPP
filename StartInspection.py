@@ -10,11 +10,8 @@ from .RttiInformation.VirtualTableInference import VirtualFunctionTable
 
 
 def is_bv_valid_for_plugin(bv: bn.BinaryView) -> bool:
-    if bv.arch.name == "x86_64" or bv.arch.name == "x86":
+    if bv.arch and (bv.arch.name == "x86_64" or bv.arch.name == "x86"):
         return True
-    else:
-        print(f'ClassyPP: Executable CPU Arch is: {bv.arch.name}. This plugin supports only x86 32/64 bit executables.')
-        return False
 
 
 def GetUserInputs() -> bool:
