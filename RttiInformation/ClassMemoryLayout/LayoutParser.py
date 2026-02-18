@@ -60,7 +60,7 @@ def get_class_info(line: str) -> Tuple[str, int]:
 
 
 def get_layout_member_offset(line: str) -> int:
-    return int(re.search(f'\d+', line).group())
+    return int(re.search(r'\d+', line).group())
 
 
 def get_hierarchy_level(line: str) -> int:
@@ -73,7 +73,7 @@ def get_member_class_name(line: str) -> str:
 
 def get_data_member_info(line: str) -> Tuple[str, str]:
     if f'<alignment member>' in line:
-        return f'alignment_member', re.search(f'\d+', line).group()
+        return f'alignment_member', re.search(r'\d+', line).group()
     else:
         processed_line = line.split(f'|')[1].split()
         if len(processed_line) == 2:
